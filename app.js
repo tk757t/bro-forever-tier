@@ -33,7 +33,7 @@ const MAX_POINTS = 8 + 8 + 29;
 const BIS = window.TIER_BIS;
 const BIS_ORDER = ["head", "neck", "shoulder", "back", "chest", "wrist", "hands", "waist", "legs", "feet", "finger1", "finger2", "trinket1", "trinket2", "weapon", "offhand", "ranged"];
 const BIS_SLOT_FR = { head: "Tête", neck: "Cou", shoulder: "Épaules", back: "Dos", chest: "Torse", wrist: "Poignets", hands: "Mains", waist: "Taille", legs: "Jambes", feet: "Pieds", finger1: "Anneau 1", finger2: "Anneau 2", trinket1: "Bijou 1", trinket2: "Bijou 2", weapon: "Arme", offhand: "Main gauche / bouclier", ranged: "Distance" };
-const QCOL = ["#9d9d9d", "#ffffff", "#1eff00", "#0070dd", "#a335ee", "#ff8000"];
+const QCOL = ["#9d9d9d", "#ffffff", "#1eff00", "#4a9dff", "#c27cff", "#ff8000"];
 const ROLE_FR = { dps: "DPS", tank: "Tank", heal: "Soins" };
 const portrait = (cls, px) => `<img class="cls-ico" src="https://wow.zamimg.com/images/wow/icons/large/classicon_${cls}.jpg" width="${px}" height="${px}" alt="" onerror="this.style.display='none'">`;
 const specList = cls => (BIS && BIS.specs[cls]) || {};
@@ -211,8 +211,8 @@ function renderHeader() {
   $("heroCrest").innerHTML = portrait(profile.cls, 80);
   $("heroSub").innerHTML = `<b>${c.fr}</b>${profile.spec ? " · " + esc(specFr(profile.cls, profile.spec)) : ""} · ${FACTIONS[profile.faction]} · ❮BroForever❯ · WoW Forever EU`;
   $("heroSets").innerHTML = `Suivi de progression des sets <b style="color:var(--gold)">T0</b> (${esc(ctx.set.t0.name)}) et <b style="color:var(--gold)">T0.5</b> (${esc(ctx.set.t05.name)})`;
-  $("tabT0").textContent = "T0 · " + ctx.set.t0.name;
-  $("tabT05").textContent = "T0.5 · " + ctx.set.t05.name;
+  $("tabT0").innerHTML = 'T0<span class="tn"> · ' + esc(ctx.set.t0.name) + "</span>";
+  $("tabT05").innerHTML = 'T0.5<span class="tn"> · ' + esc(ctx.set.t05.name) + "</span>";
   $("t0title").textContent = "Set de donjon 1 — " + ctx.set.t0.name;
   $("t05title").textContent = "Set de donjon 2 — " + ctx.set.t05.name;
   $("qtitle").textContent = "Chaîne Dungeon Set 2 — " + FACTIONS[profile.faction];
@@ -249,13 +249,13 @@ function renderHeader() {
 function render() {
   const { T0, T05, Q, M } = ctx;
   const c0 = T0.filter(p => st.t0[p.id]).length;
-  $("t0list").innerHTML = T0.map(p => `<div class="piece ${st.t0[p.id] ? "done" : ""}" data-k="t0" data-id="${p.id}" style="--q:#0070dd">
+  $("t0list").innerHTML = T0.map(p => `<div class="piece ${st.t0[p.id] ? "done" : ""}" data-k="t0" data-id="${p.id}" style="--q:#4a9dff">
     <div class="box">✓</div><div class="slot">${p.s}</div><div class="pi"><div class="pn">${aItem(p.wh, esc(p.n))}</div><div class="pm">${esc(p.fr)} · <b>${p.src}</b></div></div><div class="il">${p.i}</div></div>`).join("");
   $("t0sum").textContent = c0 + " / 8 pièces"; $("t0bon").innerHTML = bonusHTML(ctx.set.t0.bonuses, c0); $("hT0").textContent = c0 + "/8";
 
   const c5 = T05.filter(p => st.t05[p.id]).length;
   const allSteps = Q.flatMap(x => x[1]);
-  $("t05list").innerHTML = T05.map(p => `<div class="piece ${st.t05[p.id] ? "done" : ""}" data-k="t05" data-id="${p.id}" style="--q:${p.q === "epic" ? "#a335ee" : "#0070dd"}">
+  $("t05list").innerHTML = T05.map(p => `<div class="piece ${st.t05[p.id] ? "done" : ""}" data-k="t05" data-id="${p.id}" style="--q:${p.q === "epic" ? "#c27cff" : "#4a9dff"}">
     <div class="box">✓</div><div class="slot">${p.s}</div><div class="pi"><div class="pn">${aItem(p.wh, esc(p.n))}</div><div class="pm">${esc(p.fr)} · <b>${p.src.replace(/« ([^»]+) »/, (m, n) => { const q = allSteps.find(s => s.n === n.trim()); return q && q.id2 ? "« " + aQuest(parseInt(q.id2), n) + " »" : m; })}</b></div></div><div class="il">${p.i}</div></div>`).join("");
   $("t05sum").textContent = c5 + " / 8 pièces"; $("t05bon").innerHTML = bonusHTML(ctx.set.t05.bonuses, c5); $("hT05").textContent = c5 + "/8";
 
@@ -354,8 +354,8 @@ function memberHTML(p, state) {
       <div class="stats"><div class="big"><div class="n">${c0}/8</div><div class="l">T0</div></div><div class="big"><div class="n">${c5}/8</div><div class="l">T0.5</div></div>
       <div class="big"><div class="n">${cq}/${x.nQ}</div><div class="l">Quêtes</div></div><div class="big"><div class="n">${pct}%</div><div class="l">Avancement</div></div></div></div>
     <div class="bar ${pct === 100 ? "ok" : ""}" style="margin-bottom:16px"><i style="width:${pct}%"></i></div>
-    <div class="m-cols"><div><div class="phase"><span>T0 — ${esc(x.set.t0.name)}</span><span>${c0}/8</span></div>${x.T0.map(t => piece(t, s.t0[t.id], () => "#0070dd")).join("")}</div>
-      <div><div class="phase"><span>T0.5 — ${esc(x.set.t05.name)}</span><span>${c5}/8</span></div>${x.T05.map(t => piece(t, s.t05[t.id], t2 => t2.q === "epic" ? "#a335ee" : "#0070dd")).join("")}</div></div>
+    <div class="m-cols"><div><div class="phase"><span>T0 — ${esc(x.set.t0.name)}</span><span>${c0}/8</span></div>${x.T0.map(t => piece(t, s.t0[t.id], () => "#4a9dff")).join("")}</div>
+      <div><div class="phase"><span>T0.5 — ${esc(x.set.t05.name)}</span><span>${c5}/8</span></div>${x.T05.map(t => piece(t, s.t05[t.id], t2 => t2.q === "epic" ? "#c27cff" : "#4a9dff")).join("")}</div></div>
     ${p.spec ? bisReadonly(p.cls, p.spec, s) : ""}
     <div class="m-steps">${x.Q.map(ph => { const d = ph[1].filter(t => s.q[t.id]).length;
       return `<div class="phase"><span>${ph[0]}</span><span>${d}/${ph[1].length}</span></div>` + ph[1].map(t => `<div class="step ${s.q[t.id] ? "done" : ""}"><div class="box">✓</div><div class="sn">${esc(t.n)}</div></div>`).join(""); }).join("")}</div>`;
