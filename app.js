@@ -703,6 +703,21 @@ $("showCode").onclick = () => {
 $("delChar").onclick = () => deleteChar(profile.name);
 $("switchBtn").onclick = () => { const b = document.querySelector('#tabs [data-v="profile"]'); if (b) b.click(); };
 
+/* ---- version en ligne et rechargement vers la dernière version ---- */
+async function remoteVersion() {
+  try {
+    const r = await fetch("news.js?x=" + Date.now(), { cache: "no-store" });
+    if (!r.ok) return null;
+    const m = (await r.text()).match(/TIER_VERSION\s*=\s*"([^"]+)"/);
+    return m ? m[1] : null;
+  } catch (_) { return null; } // hors ligne
+}
+async function reloadLatest(btn) {
+  if (btn) { btn.disabled = true; btn.textContent = "Actualisation…"; }
+  try { if (dirty) await flush(); } catch (_) {} // la progression est sauvegardée avant
+  location.replace(location.pathname + "?u=" + Date.now()); // adresse différente : on récupère la page à jour, pas celle en cache
+}
+
 /* ============ NOUVEAUTÉS (pop-up à chaque mise à jour) + VERSION ============ */
 const VERSION = window.TIER_VERSION || "";
 const NEWS = window.TIER_NEWS || [];
@@ -710,7 +725,7 @@ function newsHTML(entries) {
   return `<h2><span>✨ Nouveautés <small>v${esc(VERSION)}</small></span> <button class="x" id="newsX" aria-label="Fermer">✕</button></h2>` +
     entries.map(e => `<div class="news-entry"><div class="news-title">${esc(e.title)} <small>v${esc(e.v)} · ${esc(e.date)}</small></div>
       <ul class="news-list">${e.items.map(i => `<li><b>${esc(i.t)}</b><span>${esc(i.d)}</span></li>`).join("")}</ul></div>`).join("") +
-    `<button class="cta" id="newsOk">Compris !</button>`;
+    `<div class="news-notice" id="newsNotice" hidden></div><div class="news-btns"><button class="btn2" id="newsRefresh" title="Recharge le site pour utiliser la dernière version">🔄 Actualiser</button><button class="cta" id="newsOk">Compris !</button></div>`;
 }
 function closeNews() {
   $("newsModal").hidden = true;
@@ -721,7 +736,15 @@ function showNews(entries) {
   $("newsBox").innerHTML = newsHTML(entries);
   $("newsModal").hidden = false;
   $("newsX").onclick = closeNews; $("newsOk").onclick = closeNews;
+  $("newsRefresh").onclick = () => { ls.set("tier-seen-version", VERSION); reloadLatest($("newsRefresh")); };
   $("newsOk").focus();
+  remoteVersion().then(v => {
+    if (v && cmpVer(v, VERSION) > 0 && !$("newsModal").hidden) {
+      $("newsNotice").textContent = "Une version plus récente (v" + v + ") est disponible : clique sur « Actualiser » pour l'utiliser.";
+      $("newsNotice").hidden = false;
+      $("newsRefresh").classList.add("hot");
+    }
+  });
 }
 function maybeShowNews() {
   const seen = ls.get("tier-seen-version");
@@ -748,20 +771,12 @@ function showUpdateToast(remote) {
     <div class="toast-btns"><button class="cta" id="updNow">Recharger</button><button class="linkbtn" id="updLater">Plus tard</button></div>`;
   t.hidden = false;
   $("updLater").onclick = () => { updateDismissed = remote; t.hidden = true; };
-  $("updNow").onclick = async () => {
-    $("updNow").disabled = true; $("updNow").textContent = "Rechargement…";
-    try { if (dirty) await flush(); } catch (_) {}
-    location.replace(location.pathname + "?u=" + Date.now()); // adresse différente : on récupère la page à jour, pas celle en cache
-  };
+  $("updNow").onclick = () => reloadLatest($("updNow"));
 }
 async function checkUpdate() {
   if (!VERSION) return;
-  try {
-    const r = await fetch("news.js?x=" + Date.now(), { cache: "no-store" });
-    if (!r.ok) return;
-    const m = (await r.text()).match(/TIER_VERSION\s*=\s*"([^"]+)"/);
-    if (m && cmpVer(m[1], VERSION) > 0 && updateDismissed !== m[1]) showUpdateToast(m[1]);
-  } catch (_) { /* hors ligne : on réessaiera */ }
+  const v = await remoteVersion();
+  if (v && cmpVer(v, VERSION) > 0 && updateDismissed !== v) showUpdateToast(v);
 }
 setInterval(checkUpdate, 5 * 60 * 1000);
 document.addEventListener("visibilitychange", () => { if (!document.hidden) checkUpdate(); });
