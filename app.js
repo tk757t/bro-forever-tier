@@ -321,6 +321,41 @@ setInterval(() => { if (dirty) flush(); }, 30000);
 window.addEventListener("online", flush);
 document.addEventListener("visibilitychange", () => { if (document.hidden && dirty) flush(); });
 
+/* ============ FICHE D'UN MEMBRE (lecture seule) ============ */
+function memberHTML(p, state) {
+  const c = CLASSES[p.cls], x = buildCtx(p);
+  const s = Object.assign(emptyState(), state || {});
+  const c0 = x.T0.filter(t => s.t0[t.id]).length, c5 = x.T05.filter(t => s.t05[t.id]).length;
+  const cq = x.Q.flatMap(ph => ph[1]).filter(t => s.q[t.id]).length;
+  const pct = Math.round((c0 + c5 + cq) / MAX_POINTS * 100);
+  const piece = (t, done, color) => `<div class="piece ${done ? "done" : ""}" style="--q:${color(t)}"><div class="box">✓</div><div class="slot">${t.s}</div>
+    <div class="pi"><div class="pn">${aItem(t.wh, esc(t.n))}</div></div><div class="il">${t.i}</div></div>`;
+  return `<h2><span>Fiche de ${esc(p.name)}</span> <button class="x" id="memberClose">Fermer ✕</button></h2>
+    <div class="m-head"><div><h3 style="color:${c.color}">${esc(p.name)}</h3>
+      <div class="sub"><b style="color:${c.color}">${c.fr}</b> · ${FACTIONS[p.faction]} · ❮BroForever❯</div></div>
+      <div class="stats"><div class="big"><div class="n">${c0}/8</div><div class="l">T0</div></div><div class="big"><div class="n">${c5}/8</div><div class="l">T0.5</div></div>
+      <div class="big"><div class="n">${cq}/${x.nQ}</div><div class="l">Quêtes</div></div><div class="big"><div class="n">${pct}%</div><div class="l">Avancement</div></div></div></div>
+    <div class="bar ${pct === 100 ? "ok" : ""}" style="margin-bottom:16px"><i style="width:${pct}%"></i></div>
+    <div class="m-cols"><div><div class="phase"><span>T0 — ${esc(x.set.t0.name)}</span><span>${c0}/8</span></div>${x.T0.map(t => piece(t, s.t0[t.id], () => "#0070dd")).join("")}</div>
+      <div><div class="phase"><span>T0.5 — ${esc(x.set.t05.name)}</span><span>${c5}/8</span></div>${x.T05.map(t => piece(t, s.t05[t.id], t2 => t2.q === "epic" ? "#a335ee" : "#0070dd")).join("")}</div></div>
+    <div class="m-steps">${x.Q.map(ph => { const d = ph[1].filter(t => s.q[t.id]).length;
+      return `<div class="phase"><span>${ph[0]}</span><span>${d}/${ph[1].length}</span></div>` + ph[1].map(t => `<div class="step ${s.q[t.id] ? "done" : ""}"><div class="box">✓</div><div class="sn">${esc(t.n)}</div></div>`).join(""); }).join("")}</div>`;
+}
+async function showMember(name) {
+  const modal = $("memberModal"), box = $("memberBox");
+  box.innerHTML = '<div class="chk info">Chargement de la fiche…</div>';
+  modal.hidden = false;
+  try {
+    const info = await rpc("tier_load", { p_name: name, p_token: null });
+    if (!info || !info.exists) { box.innerHTML = '<div class="chk warn">Personnage introuvable (supprimé ?).</div>'; return; }
+    box.innerHTML = memberHTML({ name: info.name, cls: info.class, faction: info.faction }, info.state);
+    try { window.$WowheadPower && $WowheadPower.refreshLinks(); } catch (_) {}
+  } catch (e) { box.innerHTML = '<div class="chk warn">Fiche indisponible pour le moment (connexion).</div>'; }
+  const close = $("memberClose"); if (close) close.onclick = () => { modal.hidden = true; };
+}
+$("memberModal").addEventListener("click", e => { if (e.target.id === "memberModal") e.currentTarget.hidden = true; });
+document.addEventListener("keydown", e => { if (e.key === "Escape") $("memberModal").hidden = true; });
+
 /* ============ CLASSEMENT ============ */
 function ago(iso) {
   const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
@@ -338,7 +373,7 @@ async function loadRanking(box) {
     box.querySelector(".rk-body").innerHTML = list.length ? list.map((r, i) => {
       const c = CLASSES[r.class] || { fr: r.class, color: "#999" }, pct = Math.round(r.score / MAX_POINTS * 100);
       const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : i + 1;
-      return `<tr class="${me && nameKey(r.name) === me ? "me" : ""}"><td class="pos">${medal}</td><td class="nm" style="color:${c.color}">${esc(r.name)}</td>
+      return `<tr class="${me && nameKey(r.name) === me ? "me" : ""}"><td class="pos">${medal}</td><td class="nm" style="color:${c.color}"><a class="mlink" data-name="${esc(r.name)}" title="Voir la progression de ${esc(r.name)}">${esc(r.name)}</a></td>
         <td class="hide-s">${c.fr}</td><td class="hide-s ${r.faction === "horde" ? "fac-h" : "fac-a"}">${FACTIONS[r.faction] || r.faction}</td>
         <td class="num">${r.t0}/8</td><td class="num">${r.t05}/8</td><td class="num hide-s">${r.quests}/29</td>
         <td class="pct"><b>${pct}%</b><div class="bar ${pct === 100 ? "ok" : ""}"><i style="width:${pct}%"></i></div></td><td class="when hide-s">${ago(r.updated_at)}</td></tr>`;
@@ -351,6 +386,7 @@ async function loadRanking(box) {
     <div style="overflow-x:auto"><table class="rank"><thead><tr><th>#</th><th>Personnage</th><th class="hide-s">Classe</th><th class="hide-s">Faction</th><th>T0</th><th>T0.5</th><th class="hide-s">Quêtes</th><th>Avancement</th><th class="hide-s">Mis à jour</th></tr></thead><tbody class="rk-body"></tbody></table></div>`;
   box.querySelector(".f-cls").onchange = draw; box.querySelector(".f-fac").onchange = draw;
   box.querySelector(".rk-refresh").onclick = () => loadRanking(box);
+  box.querySelector(".rk-body").addEventListener("click", e => { const a = e.target.closest(".mlink"); if (a) showMember(a.dataset.name); });
   draw();
 }
 
