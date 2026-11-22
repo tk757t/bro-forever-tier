@@ -747,11 +747,13 @@ function showNews(entries) {
   });
 }
 function maybeShowNews() {
+  if (!NEWS.length) return;
   const seen = ls.get("tier-seen-version");
-  if (seen === VERSION || !NEWS.length) return;
-  const i = NEWS.findIndex(e => e.v === seen);
-  // déjà vu une version connue : on montre ce qui est plus récent ; sinon (nouveau visiteur ou ancienne version) la dernière nouveauté
-  showNews(i > 0 ? NEWS.slice(0, Math.min(i, 3)) : NEWS.slice(0, 1));
+  // Seules les versions AVEC nouveautés (entrées de NEWS) ouvrent le pop-up. Les petites corrections (+0.0.1) restent silencieuses :
+  // si l'utilisateur a déjà vu une version égale ou plus récente que la dernière entrée, rien ne s'ouvre.
+  if (seen && cmpVer(seen, NEWS[0].v) >= 0) return;
+  const fresh = seen ? NEWS.filter(e => cmpVer(e.v, seen) > 0).slice(0, 3) : NEWS.slice(0, 1);
+  showNews(fresh.length ? fresh : NEWS.slice(0, 1));
 }
 $("newsModal").addEventListener("click", e => { if (e.target.id === "newsModal") closeNews(); });
 $("openNews").onclick = () => showNews(NEWS.slice(0, 3));
@@ -776,7 +778,8 @@ function showUpdateToast(remote) {
 async function checkUpdate() {
   if (!VERSION) return;
   const v = await remoteVersion();
-  if (v && cmpVer(v, VERSION) > 0 && updateDismissed !== v) showUpdateToast(v);
+  // la bulle ne s'affiche que pour une version avec nouveautés (x.y) ; les petites corrections (+0.0.1) sont silencieuses
+  if (v && cmpVer(v.split(".").slice(0, 2).join("."), VERSION.split(".").slice(0, 2).join(".")) > 0 && updateDismissed !== v) showUpdateToast(v);
 }
 setInterval(checkUpdate, 5 * 60 * 1000);
 document.addEventListener("visibilitychange", () => { if (!document.hidden) checkUpdate(); });

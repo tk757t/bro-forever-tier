@@ -1,13 +1,9 @@
 // Version du site et nouveautés affichées dans la fenêtre « Nouveautés » (la plus récente en premier).
-// À CHAQUE mise à jour : ajouter une entrée en HAUT de la liste et changer TIER_VERSION (le pop-up s'ouvre alors une fois pour chaque membre).
-window.TIER_VERSION = "1.7.1";
+// Règle de version :
+//  - petit changement ou correction : seulement +0.0.1 sur TIER_VERSION (aucune entrée, aucun pop-up) ;
+//  - vraie nouveauté : nouvelle version x.y.0 + une entrée en HAUT de TIER_NEWS (le pop-up s'ouvre alors une fois pour chaque membre).
+window.TIER_VERSION = "1.7.2";
 window.TIER_NEWS = [
-  {
-    v: "1.7.1", date: "22/11/2026", title: "Bouton Actualiser",
-    items: [
-      { t: "🔄 Actualiser depuis les nouveautés", d: "Un bouton « Actualiser » recharge le site pour être sûr d'utiliser la dernière version. Ta progression est sauvegardée avant, et la fenêtre te prévient si une version plus récente est disponible." },
-    ],
-  },
   {
     v: "1.7.0", date: "22/11/2026", title: "Chaîne de quêtes détaillée",
     items: [
