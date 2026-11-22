@@ -237,3 +237,11 @@ table.rank .nm .cls-ico{width:28px;height:28px;margin-right:10px;border-width:1p
   .big{min-width:0;padding:8px 6px}.big .l{font-size:11px}
   .tabs button{padding:8px 13px}
 }
+
+/* ---------- icônes des onglets ---------- */
+.tabs button{display:flex;align-items:center;gap:12px}
+.tabs .ti{width:21px;height:21px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;opacity:.8;transition:.15s}
+.tabs button:hover .ti{opacity:1}
+.tabs button.on .ti{stroke:var(--accent);opacity:1}
+.tabs .tl{min-width:0}
+@media (max-width:900px){.tabs button{gap:8px}.tabs .ti{width:19px;height:19px}}
