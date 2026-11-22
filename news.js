@@ -2,7 +2,7 @@
 // Règle de version :
 //  - petit changement ou correction : seulement +0.0.1 sur TIER_VERSION (aucune entrée, aucun pop-up) ;
 //  - vraie nouveauté : nouvelle version x.y.0 + une entrée en HAUT de TIER_NEWS (le pop-up s'ouvre alors une fois pour chaque membre).
-window.TIER_VERSION = "1.7.3";
+window.TIER_VERSION = "1.7.4";
 window.TIER_NEWS = [
   {
     v: "1.7.0", date: "22/11/2026", title: "Chaîne de quêtes détaillée",

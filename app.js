@@ -721,11 +721,15 @@ async function reloadLatest(btn) {
 /* ============ NOUVEAUTÉS (pop-up à chaque mise à jour) + VERSION ============ */
 const VERSION = window.TIER_VERSION || "";
 const NEWS = window.TIER_NEWS || [];
+const newsList = e => `<ul class="news-list">${e.items.map(i => `<li><b>${esc(i.t)}</b><span>${esc(i.d)}</span></li>`).join("")}</ul>`;
+// La nouveauté la plus récente est dépliée ; les versions précédentes sont repliées dans des menus déroulants.
 function newsHTML(entries) {
-  return `<h2><span>✨ Nouveautés <small>v${esc(VERSION)}</small></span> <button class="x" id="newsX" aria-label="Fermer">✕</button></h2>` +
-    entries.map(e => `<div class="news-entry"><div class="news-title">${esc(e.title)} <small>v${esc(e.v)} · ${esc(e.date)}</small></div>
-      <ul class="news-list">${e.items.map(i => `<li><b>${esc(i.t)}</b><span>${esc(i.d)}</span></li>`).join("")}</ul></div>`).join("") +
-    `<div class="news-notice" id="newsNotice" hidden></div><div class="news-btns"><button class="btn2" id="newsRefresh" title="Recharge le site pour utiliser la dernière version">🔄 Actualiser</button><button class="cta" id="newsOk">Compris !</button></div>`;
+  const [latest, ...older] = entries;
+  return `<h2><span>✨ Nouveautés <small>v${esc(VERSION)}</small></span><span class="news-head-btns"><button class="btn2 sm" id="newsRefresh" title="Recharge le site pour utiliser la dernière version">🔄 Actualiser</button><button class="x" id="newsX" aria-label="Fermer">✕</button></span></h2>
+    <div class="news-notice" id="newsNotice" hidden></div>
+    <div class="news-entry"><div class="news-title">${esc(latest.title)} <small>v${esc(latest.v)} · ${esc(latest.date)}</small></div>${newsList(latest)}</div>` +
+    (older.length ? `<div class="news-older-title">Versions précédentes</div>` + older.map(e => `<details class="news-old"><summary><b>${esc(e.title)}</b> <small>v${esc(e.v)} · ${esc(e.date)}</small></summary>${newsList(e)}</details>`).join("") : "") +
+    `<button class="cta" id="newsOk">Compris !</button>`;
 }
 function closeNews() {
   $("newsModal").hidden = true;
@@ -753,10 +757,10 @@ function maybeShowNews() {
   // si l'utilisateur a déjà vu une version égale ou plus récente que la dernière entrée, rien ne s'ouvre.
   if (seen && cmpVer(seen, NEWS[0].v) >= 0) return;
   const fresh = seen ? NEWS.filter(e => cmpVer(e.v, seen) > 0).slice(0, 3) : NEWS.slice(0, 1);
-  showNews(fresh.length ? fresh : NEWS.slice(0, 1));
+  showNews(NEWS.slice(0, 5));
 }
 $("newsModal").addEventListener("click", e => { if (e.target.id === "newsModal") closeNews(); });
-$("openNews").onclick = () => showNews(NEWS.slice(0, 3));
+$("openNews").onclick = () => showNews(NEWS.slice(0, 6));
 $("siteVer").textContent = "v" + VERSION;
 setTimeout(maybeShowNews, 600);
 

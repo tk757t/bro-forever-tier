@@ -298,3 +298,18 @@ table.rank .nm .cls-ico{width:28px;height:28px;margin-right:10px;border-width:1p
 .btn2.hot{border-color:var(--accent);background:var(--accent-soft);box-shadow:0 0 0 2px var(--accent-soft)}
 .btn2:disabled{opacity:.6;cursor:wait}
 .news-notice{background:var(--panel2);border:1px solid var(--accent);border-left-width:4px;border-radius:var(--radius-sm);padding:10px 14px;font-size:14px;margin-top:6px}
+
+/* ---------- Nouveautés : bouton en haut + anciennes versions repliées ---------- */
+.news-head-btns{display:flex;gap:8px;align-items:center}
+.btn2.sm{padding:6px 12px;font-size:13.5px;border-radius:8px}
+.news-older-title{font-size:13px;font-weight:600;color:var(--dim);margin:16px 0 8px}
+.news-old{background:var(--panel2);border:1px solid var(--edge);border-radius:var(--radius-sm);margin-bottom:8px}
+.news-old summary{cursor:pointer;padding:10px 14px;font-size:14px;list-style:none;display:flex;align-items:center;gap:8px}
+.news-old summary::-webkit-details-marker{display:none}
+.news-old summary::before{content:"▸";color:var(--dim);transition:transform .15s}
+.news-old[open] summary::before{transform:rotate(90deg)}
+.news-old summary small{color:var(--dim);font-weight:450}
+.news-old[open] summary{border-bottom:1px solid var(--edge)}
+.news-old .news-list{padding:10px}
+.news-old .news-list li{background:var(--bg2)}
+.news-box .cta{margin-top:12px}
