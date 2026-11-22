@@ -272,3 +272,20 @@ table.rank .nm .cls-ico{width:28px;height:28px;margin-right:10px;border-width:1p
 .toast-btns{display:flex;align-items:center;gap:10px;margin-top:12px}
 .toast-btns .cta{width:auto;padding:9px 18px;font-size:14px}
 @keyframes toastin{from{transform:translateY(14px);opacity:0}to{transform:none;opacity:1}}
+
+/* ---------- détail déroulant des étapes ---------- */
+.step-main{flex:1;min-width:0}
+.step .chev{flex:none;color:var(--dim);font-size:15px;padding:2px 2px 0 8px;align-self:flex-start}
+.step:hover .chev{color:var(--text)}
+.step .box{cursor:pointer}
+.step .box:hover{border-color:var(--ok)}
+.step.open{border-color:var(--edge2);background:#202736}
+.step-detail{margin-top:10px;padding-top:10px;border-top:1px dashed var(--edge2);cursor:default;font-size:14px;line-height:1.55}
+.step-detail p{color:var(--text);margin:2px 0}
+.step-detail ul{margin:2px 0 2px 20px;color:var(--text)}
+.step-detail li{margin:2px 0}
+.sdt{font-weight:650;color:var(--gold);margin:12px 0 3px;font-size:13.5px}
+.sdt:first-child{margin-top:2px}
+.sdsmall{font-size:12.5px;color:var(--warn);margin-top:4px}
+.sdlink{margin-top:12px}.sdlink a{color:#9cc2ff}
+.qhint{font-size:13px;color:var(--dim);margin:0 0 10px}

@@ -1,7 +1,15 @@
 // Version du site et nouveautés affichées dans la fenêtre « Nouveautés » (la plus récente en premier).
 // À CHAQUE mise à jour : ajouter une entrée en HAUT de la liste et changer TIER_VERSION (le pop-up s'ouvre alors une fois pour chaque membre).
-window.TIER_VERSION = "1.6.0";
+window.TIER_VERSION = "1.7.0";
 window.TIER_NEWS = [
+  {
+    v: "1.7.0", date: "22/11/2026", title: "Chaîne de quêtes détaillée",
+    items: [
+      { t: "📖 Clique sur une étape pour la dérouler", d: "Texte officiel de la quête (Wowhead Forever, en français) adapté à ta classe et à ta faction, objets à apporter, lieu, échange des pièces T0 → T0.5 et astuces." },
+      { t: "☑ Case à cocher séparée", d: "La case à gauche marque l'étape comme terminée ; un clic ailleurs sur l'étape déroule ou replie son détail." },
+      { t: "✅ 3e seigneur du feu confirmé", d: "L'étape « Les trois rois des flammes » demande la Cendre d'Asharell : la contradiction entre les guides est levée." },
+    ],
+  },
   {
     v: "1.6.0", date: "22/11/2026", title: "Alerte de mise à jour",
     items: [

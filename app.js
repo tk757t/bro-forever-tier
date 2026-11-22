@@ -145,8 +145,13 @@ function adaptChain(p) {
   step("q21").loc = spLoc(sp1);
   step("q23").loc = COMP[c2].loc; step("q23").req = comps[c2].fr;
   step("q24").loc = spLoc(sp2);
+  step("q19").loc = "Profondeurs de Blackrock · Pic Blackrock · Exécuteur Asharell (Steppes ardentes)";
+  step("q19").req = "Incendicite d'Incendius (BRD) + Braise du prophète ardent (BRS) + Cendre d'Asharell + Brasero béni (Aube d'argent, Honoré)";
+  step("q21").req = "Brasero de signal → invoquer l'esprit et le tuer";
+  step("q24").req = "Brasero de signal → invoquer l'esprit et le tuer";
   for (const g of M) {
     if (g[0] === "Silithus & ectoplasmes" && alliance) g[1][0][0] = bloodFr;
+    for (const row of g[1]) if (row[0] === "3e objet seigneur du feu") row[0] = "Cendre d'Asharell";
     for (const row of g[1]) {
       row[0] = fix(row[0]);
       if (row[3] === "q20") row[0] = comps[c1].fr;
@@ -236,7 +241,7 @@ function renderHeader() {
   const mokvar = profile.faction === "horde" ? "Mokvar (Orgrimmar)" : "Deliana (Forgefer)";
   $("checkBox").innerHTML = `<div class="chk warn">Niveau : 58 minimum, 60 conseillé. La chaîne démarre chez ${mokvar}.</div>
     <div class="chk warn">Or total : 60 selon un guide, ~100 selon un autre (baguette de Vi'el ≈ 40 po).</div>
-    <div class="chk warn">3e seigneur du feu (Trois rois de flamme) : Exécuteur Asharell (Steppes ardentes) <i>ou</i> Cendre de Cynders (Silithus) — sources contradictoires.</div>
+    <div class="chk info">3e seigneur du feu (Trois rois de flamme) : <b>Cendre d'Asharell</b> (texte officiel de la quête sur Wowhead Forever), à chercher auprès de l'Exécuteur Asharell dans les Steppes ardentes.</div>
     <div class="chk warn">Source des données : guides pré-sortie basés sur Wowhead Forever (nov. 2026). Peut changer.</div>`;
   $("foot").innerHTML = `Suivi T0 / T0.5 ${c.fr} ${FACTIONS[profile.faction]} · Sources :
     <a target="_blank" rel="noopener" href="https://www.zockify.com/forever/${profile.cls}/sets/">Zockify</a> ·
@@ -244,6 +249,62 @@ function renderHeader() {
     <a target="_blank" rel="noopener" href="https://leprestore.com/guides/world-of-warcraft-forever/wow-forever-tier-0-5-upgrade-guide-dungeon-set-2/">Leprestore</a> ·
     <a target="_blank" rel="noopener" href="https://www.wowhead.com/forever">Wowhead Forever</a><br>Données de sortie pré-release : peuvent changer. Les noms français sont ceux de Wowhead Forever (fr).`;
   $("saveInfo").textContent = "Ta progression est enregistrée dans ce navigateur et synchronisée avec le classement de la guilde (seuls le nom, la classe, la faction et la progression sont envoyés).";
+}
+
+/* ============ DÉTAIL DES ÉTAPES DE QUÊTE (clic pour dérouler) ============ */
+const openSteps = new Set();
+const aForeverQuest = (id, t) => `<a href="https://www.wowhead.com/forever/fr/quest=${id}" target="_blank" rel="noopener">${t}</a>`;
+// Texte officiel (Wowhead Forever, fr) de la variante qui correspond à la classe et à la faction du personnage
+function questInfo(id) {
+  const Qd = window.TIER_QUESTS;
+  if (!Qd || !profile) return null;
+  const f = profile.faction, c = profile.cls;
+  if (Qd.generic[id]) return Qd.generic[id];
+  if (Qd.faction[id]) return Qd.faction[id][f] || null;
+  if (Qd.variant[id]) return (Qd.variant[id][f] || {})[c] || null;
+  const parts = ctx && ctx.parts;
+  if (!parts) return null;
+  if (id === "q20") return Qd.comp[parts[0][0]] || null;
+  if (id === "q21") return Qd.spiritL[parts[0][1]] || null;
+  if (id === "q23") return Qd.compB[parts[1][0]] || null;
+  if (id === "q24") return Qd.spiritR[parts[1][1]] || null;
+  return null;
+}
+const STEP_TIPS = {
+  q1: p => [p.faction === "alliance" ? "Les 15 échantillons de sang se ramassent sur les ours et les sabres-de-givre de Berceau-de-l'Hiver." : "Les 15 échantillons de venin se ramassent sur les scorpides et les araignées de Silithus.", "Niveau 58 minimum pour toute la chaîne ; garde-toi 20 po pour cette étape."],
+  q3: () => ["Convertisseur d'arcanite délicat : ingénierie ou hôtel des ventes.", "Essence éternelle supérieure : enchantement ou hôtel des ventes.", "Huile de pierre-écaille : alchimie ou hôtel des ventes.", "Cendre volcanique : tas de cendre dans les Steppes ardentes et en Silithus.", "Prévois 40 po (voir l'onglet Matériaux & or)."],
+  q4: () => ["Utilise l'alambic à proximité de morts-vivants désincarnés (fantômes) de chaque zone : Silithus, Berceau-de-l'Hiver, Maleterres de l'est."],
+  q5: () => ["Le seigneur du magma Bokk se trouve dans les Steppes ardentes."],
+  q6: () => ["Vi'el est un diablotin dans la grotte, à l'entrée des Gorges des Murmures sombres (Berceau-de-l'Hiver).", "Le prix de la baguette (~40 po) n'est pas confirmé."],
+  q9: () => ["Le Révélateur de fantômes extradimensionnel permet de voir le fantôme d'Anthion Harmon."],
+  q10: () => ["Donjon : Stratholme. Il faut venir à bout du baron Vivebise (Rivendare)."],
+  q12: () => ["Barres de sombrefer (forge), cuir enchanté et peaux traitées (travail du cuir), étoffe lunaire (couture) : tout s'achète aussi à l'hôtel des ventes."],
+  q14: () => ["Les perles de guerre ogre tombent sur les ogres de Dire Maul ou du Pic Blackrock."],
+  q16: () => ["Donjon : Profondeurs de Blackrock, dans le Cercle de la loi (l'arène).", "Place la bannière au centre pendant la sentence du Grand Juge Grimstone, puis bats Theldren et ses gladiateurs."],
+  q19: () => ["Incendicite : Incendius (Profondeurs de Blackrock). Braise : prophète ardent (Pic Blackrock).", "Cendre d'Asharell : Exécuteur Asharell (Steppes ardentes, d'après HardcoreHelper).", "Brasero béni : réputation Aube d'argent Honoré."],
+  q21: () => ["Invoque l'esprit avec le Brasero de signal, puis tue-le. Viens en groupe : c'est un combat de donjon."],
+  q22: () => ["Le varech de sang se ramasse sur l'île d'Alcaz (Marécage d'Âprefange)."],
+  q24: () => ["Même principe que l'étape 21 : Brasero de signal, esprit à tuer, retour chez Bodley."],
+  q25: () => ["Brassards blackrock : butin du Pic Blackrock. Flacon de pouvoir suprême : alchimie ou hôtel des ventes."],
+  q26: () => ["Haut du Pic Blackrock, l'antre de la Bête : invoque Valthalak avec le brasero, puis utilise l'amulette sur son cadavre."],
+};
+const fixReq = x => x.replace(/^Argent\s*:\s*(\d+)\s*$/, "$1 po").replace(/^(.+?) x (\d+)$/, "$2 × $1");
+function stepDetail(s, qi) {
+  const cls = CLASSES[profile.cls].fr, fac = FACTIONS[profile.faction];
+  let h = '<div class="step-detail">';
+  h += `<div class="sdt">📖 Ce qu'il faut faire</div><p>${qi ? esc(qi.d.replace(/<([^<>\/]+)\/([^<>]+)>/g, "$1/$2")) : esc(s.req)}</p>`;
+  if (!qi) h += `<div class="sdsmall">Le texte officiel n'est pas disponible pour ${cls} ${fac} : explication simplifiée.</div>`;
+  if (qi && qi.r.length) h += `<div class="sdt">🎒 Objectifs et objets à apporter</div><ul>${qi.r.map(x => `<li>${linkify(esc(fixReq(x)))}</li>`).join("")}</ul>`;
+  h += `<div class="sdt">📍 Où ?</div><p>${s.loc}</p>`;
+  const reward = ctx.T05.filter(p => p.step === s.id);
+  if (reward.length) {
+    const give = (s.c || []).map(k => ctx.T0.find(p => p.id === k)).filter(Boolean);
+    h += `<div class="sdt">🎁 Échange</div><p>Tu rends : ${give.map(p => aItem(p.wh, esc(p.n))).join(", ")}<br>Tu reçois : ${reward.map(p => aItem(p.wh, esc(p.n))).join(", ")}</p>`;
+  }
+  const tips = STEP_TIPS[s.id] ? STEP_TIPS[s.id](profile) : [];
+  if (tips.length) h += `<div class="sdt">💡 Astuces</div><ul>${tips.map(t => `<li>${esc(t)}</li>`).join("")}</ul>`;
+  if (qi) h += `<p class="sdlink"><a href="https://www.wowhead.com/forever/fr/quest=${qi.id}" target="_blank" rel="noopener">Voir la quête sur Wowhead Forever ↗</a></p>`;
+  return h + "</div>";
 }
 
 function render() {
@@ -256,19 +317,20 @@ function render() {
   const c5 = T05.filter(p => st.t05[p.id]).length;
   const allSteps = Q.flatMap(x => x[1]);
   $("t05list").innerHTML = T05.map(p => `<div class="piece ${st.t05[p.id] ? "done" : ""}" data-k="t05" data-id="${p.id}" style="--q:${p.q === "epic" ? "#c27cff" : "#4a9dff"}">
-    <div class="box">✓</div><div class="slot">${p.s}</div><div class="pi"><div class="pn">${aItem(p.wh, esc(p.n))}</div><div class="pm">${esc(p.fr)} · <b>${p.src.replace(/« ([^»]+) »/, (m, n) => { const q = allSteps.find(s => s.n === n.trim()); return q && q.id2 ? "« " + aQuest(parseInt(q.id2), n) + " »" : m; })}</b></div></div><div class="il">${p.i}</div></div>`).join("");
+    <div class="box">✓</div><div class="slot">${p.s}</div><div class="pi"><div class="pn">${aItem(p.wh, esc(p.n))}</div><div class="pm">${esc(p.fr)} · <b>${p.src.replace(/« ([^»]+) »/, (m, n) => { const q = allSteps.find(s => s.n === n.trim()); const qi = q && questInfo(q.id); return qi ? "« " + aForeverQuest(qi.id, n) + " »" : m; })}</b></div></div><div class="il">${p.i}</div></div>`).join("");
   $("t05sum").textContent = c5 + " / 8 pièces"; $("t05bon").innerHTML = bonusHTML(ctx.set.t05.bonuses, c5); $("hT05").textContent = c5 + "/8";
 
   const nQ = ctx.nQ, cq = Object.values(st.q).filter(Boolean).length;
   $("qsum").textContent = cq + " / " + nQ + " étapes"; $("hQ").textContent = Math.round(cq / nQ * 100) + "%";
-  $("qlist").innerHTML = `<div class="bar ${cq === nQ ? "ok" : ""}" style="margin-bottom:6px"><i style="width:${cq / nQ * 100}%"></i></div>` + Q.map(ph => {
+  $("qlist").innerHTML = `<div class="bar ${cq === nQ ? "ok" : ""}" style="margin-bottom:6px"><i style="width:${cq / nQ * 100}%"></i></div><div class="qhint">Clique sur une étape pour voir le détail · coche la case à gauche quand elle est terminée.</div>` + Q.map(ph => {
     const d = ph[1].filter(s => st.q[s.id]).length;
     return `<div class="phase"><span>${ph[0]}</span><span>${d}/${ph[1].length}</span></div>` + ph[1].map(s => {
       const need = (s.c || []).filter(k => !st.t0[k]);
       const consume = (s.c || []).length ? `<div class="note">⚠ Consomme : ${s.c.map(k => T0.find(p => p.id === k).s).join(", ")}${need.length && !st.q[s.id] ? ` — T0 manquant : ${need.map(k => T0.find(p => p.id === k).s).join(", ")}` : ""}</div>` : "";
-      return `<div class="step ${st.q[s.id] ? "done" : ""}" data-k="q" data-id="${s.id}"><div class="box">✓</div><div>
-        <div class="sn">${s.id2 ? aQuest(parseInt(s.id2), s.n) : aSearch(s.n + " quest", s.n)}<em>${s.id2 ? "#" + s.id2 + " · " : ""}${s.id.replace("q", "étape ")}</em></div>
-        <div class="sd"><span class="loc">${s.loc}</span><br><span class="req">${linkify(s.req)}</span></div>${consume}</div></div>`;
+      const qi = questInfo(s.id), qid = qi ? qi.id : null, open = openSteps.has(s.id);
+      return `<div class="step ${st.q[s.id] ? "done" : ""} ${open ? "open" : ""}" data-step="${s.id}"><div class="box" data-k="q" data-id="${s.id}" title="Cocher / décocher cette étape">✓</div><div class="step-main">
+        <div class="sn">${qid ? aForeverQuest(qid, s.n) : aSearch(s.n + " quest", s.n)}<em>${qid ? "#" + qid + " · " : ""}${s.id.replace("q", "étape ")}</em></div>
+        <div class="sd"><span class="loc">${s.loc}</span><br><span class="req">${linkify(s.req)}</span></div>${consume}${open ? stepDetail(s, qi) : ""}</div><div class="chev" title="${open ? "Replier" : "Voir le détail"}">${open ? "▴" : "▾"}</div></div>`;
     }).join("");
   }).join("");
 
@@ -571,6 +633,7 @@ async function startSession(name, cls, faction) {
 }
 
 function enterApp() {
+  openSteps.clear(); // les étapes déroulées ne suivent pas d'un personnage à l'autre
   ctx = buildCtx(profile);
   renderHeader();
   show("app");
@@ -584,6 +647,13 @@ function enterApp() {
 document.addEventListener("click", e => {
   if (!profile || $("screen-app").hidden) return;
   if (e.target.closest("a,input,button")) return;
+  const stepEl = e.target.closest("[data-step]");
+  if (stepEl && !e.target.closest("[data-k]") && !e.target.closest(".step-detail")) {
+    const sid = stepEl.dataset.step;
+    if (openSteps.has(sid)) openSteps.delete(sid); else openSteps.add(sid);
+    render();
+    return;
+  }
   const el = e.target.closest("[data-k]"); if (!el) return;
   const k = el.dataset.k, id = el.dataset.id; st[k][id] = !st[k][id];
   if (k === "q") ctx.T05.filter(p => p.step === id).forEach(p => { st.t05[p.id] = st.q[id]; });
