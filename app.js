@@ -211,8 +211,8 @@ function renderHeader() {
   $("heroCrest").innerHTML = portrait(profile.cls, 80);
   $("heroSub").innerHTML = `<b>${c.fr}</b>${profile.spec ? " · " + esc(specFr(profile.cls, profile.spec)) : ""} · ${FACTIONS[profile.faction]} · ❮BroForever❯ · WoW Forever EU`;
   $("heroSets").innerHTML = `Suivi de progression des sets <b style="color:var(--gold)">T0</b> (${esc(ctx.set.t0.name)}) et <b style="color:var(--gold)">T0.5</b> (${esc(ctx.set.t05.name)})`;
-  $("tabT0").innerHTML = 'T0<span class="tn"> · ' + esc(ctx.set.t0.name) + "</span>";
-  $("tabT05").innerHTML = 'T0.5<span class="tn"> · ' + esc(ctx.set.t05.name) + "</span>";
+  $("tabT0").innerHTML = 'T0<span class="tn">' + esc(ctx.set.t0.name) + "</span>";
+  $("tabT05").innerHTML = 'T0.5<span class="tn">' + esc(ctx.set.t05.name) + "</span>";
   $("t0title").textContent = "Set de donjon 1 — " + ctx.set.t0.name;
   $("t05title").textContent = "Set de donjon 2 — " + ctx.set.t05.name;
   $("qtitle").textContent = "Chaîne Dungeon Set 2 — " + FACTIONS[profile.faction];
