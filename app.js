@@ -665,6 +665,39 @@ $("openNews").onclick = () => showNews(NEWS.slice(0, 3));
 $("siteVer").textContent = "v" + VERSION;
 setTimeout(maybeShowNews, 600);
 
+/* ---- alerte « nouvelle version disponible » pendant que le site est ouvert ---- */
+function cmpVer(a, b) {
+  const x = String(a).split(".").map(Number), y = String(b).split(".").map(Number);
+  for (let i = 0; i < Math.max(x.length, y.length); i++) { const d = (x[i] || 0) - (y[i] || 0); if (d) return d; }
+  return 0;
+}
+let updateDismissed = null;
+function showUpdateToast(remote) {
+  const t = $("updateToast");
+  t.innerHTML = `<div class="toast-msg"><b>🔔 Nouvelle version disponible</b><span>v${esc(remote)} est en ligne (tu as la v${esc(VERSION)}). Ta progression est sauvegardée avant le rechargement.</span></div>
+    <div class="toast-btns"><button class="cta" id="updNow">Recharger</button><button class="linkbtn" id="updLater">Plus tard</button></div>`;
+  t.hidden = false;
+  $("updLater").onclick = () => { updateDismissed = remote; t.hidden = true; };
+  $("updNow").onclick = async () => {
+    $("updNow").disabled = true; $("updNow").textContent = "Rechargement…";
+    try { if (dirty) await flush(); } catch (_) {}
+    location.replace(location.pathname + "?u=" + Date.now()); // adresse différente : on récupère la page à jour, pas celle en cache
+  };
+}
+async function checkUpdate() {
+  if (!VERSION) return;
+  try {
+    const r = await fetch("news.js?x=" + Date.now(), { cache: "no-store" });
+    if (!r.ok) return;
+    const m = (await r.text()).match(/TIER_VERSION\s*=\s*"([^"]+)"/);
+    if (m && cmpVer(m[1], VERSION) > 0 && updateDismissed !== m[1]) showUpdateToast(m[1]);
+  } catch (_) { /* hors ligne : on réessaiera */ }
+}
+setInterval(checkUpdate, 5 * 60 * 1000);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) checkUpdate(); });
+window.addEventListener("online", checkUpdate);
+setTimeout(checkUpdate, 2 * 60 * 1000);
+
 /* ============ DÉMARRAGE ============ */
 buildLogin();
 (function boot() {

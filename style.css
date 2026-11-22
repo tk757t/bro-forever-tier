@@ -263,3 +263,12 @@ table.rank .nm .cls-ico{width:28px;height:28px;margin-right:10px;border-width:1p
 .sitefoot .by{color:var(--text)}
 .sitefoot .heart{color:#ff6b8a;display:inline-block;animation:beat 1.6s ease-in-out infinite}
 @keyframes beat{0%,100%{transform:scale(1)}50%{transform:scale(1.25)}}
+
+/* ---------- bulle « nouvelle version » ---------- */
+.toast{position:fixed;right:18px;bottom:18px;z-index:60;width:min(340px,calc(100vw - 36px));background:var(--panel);border:1px solid var(--accent);border-radius:var(--radius);padding:14px 16px;box-shadow:0 14px 40px rgba(0,0,0,.55),0 0 24px var(--accent-soft);animation:toastin .35s ease-out}
+.toast[hidden]{display:none}
+.toast-msg{display:grid;gap:3px;font-size:14px;line-height:1.4}
+.toast-msg b{font-size:15px}.toast-msg span{color:var(--dim)}
+.toast-btns{display:flex;align-items:center;gap:10px;margin-top:12px}
+.toast-btns .cta{width:auto;padding:9px 18px;font-size:14px}
+@keyframes toastin{from{transform:translateY(14px);opacity:0}to{transform:none;opacity:1}}

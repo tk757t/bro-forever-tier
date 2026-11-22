@@ -1,7 +1,14 @@
 // Version du site et nouveautés affichées dans la fenêtre « Nouveautés » (la plus récente en premier).
 // À CHAQUE mise à jour : ajouter une entrée en HAUT de la liste et changer TIER_VERSION (le pop-up s'ouvre alors une fois pour chaque membre).
-window.TIER_VERSION = "1.5.0";
+window.TIER_VERSION = "1.6.0";
 window.TIER_NEWS = [
+  {
+    v: "1.6.0", date: "22/11/2026", title: "Alerte de mise à jour",
+    items: [
+      { t: "🔔 Nouvelle version disponible", d: "Si tu gardes le site ouvert, une petite bulle te prévient dès qu'une mise à jour est en ligne, avec un bouton pour recharger (ta progression est sauvegardée avant)." },
+      { t: "✨ Nouveautés et version", d: "Cette fenêtre s'ouvre à chaque mise à jour. Le numéro de version et le lien « Nouveautés » sont en bas de page." },
+    ],
+  },
   {
     v: "1.5.0", date: "22/11/2026", title: "Profil, BiS et nouveau look",
     items: [
