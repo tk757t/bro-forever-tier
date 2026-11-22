@@ -1,0 +1,15 @@
+// Version du site et nouveautés affichées dans la fenêtre « Nouveautés » (la plus récente en premier).
+// À CHAQUE mise à jour : ajouter une entrée en HAUT de la liste et changer TIER_VERSION (le pop-up s'ouvre alors une fois pour chaque membre).
+window.TIER_VERSION = "1.5.0";
+window.TIER_NEWS = [
+  {
+    v: "1.5.0", date: "22/11/2026", title: "Profil, BiS et nouveau look",
+    items: [
+      { t: "👤 Nouvelle page Profil", d: "Gère tous tes personnages au même endroit : ajoute-en, passe de l'un à l'autre et indique la spécialisation de chacun (les BiS en dépendent)." },
+      { t: "⚔ Page BiS", d: "Les meilleurs objets de chaque emplacement selon ta spécialisation, avec leurs alternatives. Coche-les au fur et à mesure." },
+      { t: "🎭 Portraits de classe", d: "L'icône de ta classe s'affiche à côté de ton nom, dans le classement et sur les fiches." },
+      { t: "🧭 Menu à gauche", d: "Navigation en colonne avec icônes, et un design plus clair et plus lisible." },
+      { t: "🏆 Fiches du classement", d: "Clique sur un pseudo du classement pour voir la progression d'un membre." },
+    ],
+  },
+];

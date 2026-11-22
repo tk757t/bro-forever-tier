@@ -373,7 +373,10 @@ async function showMember(name) {
   const close = $("memberClose"); if (close) close.onclick = () => { modal.hidden = true; };
 }
 $("memberModal").addEventListener("click", e => { if (e.target.id === "memberModal") e.currentTarget.hidden = true; });
-document.addEventListener("keydown", e => { if (e.key === "Escape") $("memberModal").hidden = true; });
+document.addEventListener("keydown", e => {
+  if (e.key !== "Escape") return;
+  if (!$("newsModal").hidden) closeNews(); else $("memberModal").hidden = true;
+});
 
 /* ============ CLASSEMENT ============ */
 function ago(iso) {
@@ -629,6 +632,38 @@ $("showCode").onclick = () => {
 };
 $("delChar").onclick = () => deleteChar(profile.name);
 $("switchBtn").onclick = () => { const b = document.querySelector('#tabs [data-v="profile"]'); if (b) b.click(); };
+
+/* ============ NOUVEAUTÉS (pop-up à chaque mise à jour) + VERSION ============ */
+const VERSION = window.TIER_VERSION || "";
+const NEWS = window.TIER_NEWS || [];
+function newsHTML(entries) {
+  return `<h2><span>✨ Nouveautés <small>v${esc(VERSION)}</small></span> <button class="x" id="newsX" aria-label="Fermer">✕</button></h2>` +
+    entries.map(e => `<div class="news-entry"><div class="news-title">${esc(e.title)} <small>v${esc(e.v)} · ${esc(e.date)}</small></div>
+      <ul class="news-list">${e.items.map(i => `<li><b>${esc(i.t)}</b><span>${esc(i.d)}</span></li>`).join("")}</ul></div>`).join("") +
+    `<button class="cta" id="newsOk">Compris !</button>`;
+}
+function closeNews() {
+  $("newsModal").hidden = true;
+  ls.set("tier-seen-version", VERSION);
+}
+function showNews(entries) {
+  if (!entries.length) return;
+  $("newsBox").innerHTML = newsHTML(entries);
+  $("newsModal").hidden = false;
+  $("newsX").onclick = closeNews; $("newsOk").onclick = closeNews;
+  $("newsOk").focus();
+}
+function maybeShowNews() {
+  const seen = ls.get("tier-seen-version");
+  if (seen === VERSION || !NEWS.length) return;
+  const i = NEWS.findIndex(e => e.v === seen);
+  // déjà vu une version connue : on montre ce qui est plus récent ; sinon (nouveau visiteur ou ancienne version) la dernière nouveauté
+  showNews(i > 0 ? NEWS.slice(0, Math.min(i, 3)) : NEWS.slice(0, 1));
+}
+$("newsModal").addEventListener("click", e => { if (e.target.id === "newsModal") closeNews(); });
+$("openNews").onclick = () => showNews(NEWS.slice(0, 3));
+$("siteVer").textContent = "v" + VERSION;
+setTimeout(maybeShowNews, 600);
 
 /* ============ DÉMARRAGE ============ */
 buildLogin();
