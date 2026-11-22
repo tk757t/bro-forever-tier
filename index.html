@@ -7,7 +7,7 @@
 <meta name="description" content="Suivi de progression des sets T0 et T0.5 pour la guilde BroForever (WoW Forever) et classement.">
 <script>const whTooltips={colorLinks:true,iconizeLinks:false,renameLinks:false,iconSize:"small"};</script>
 <script src="https://wow.zamimg.com/js/tooltips.js"></script>
-<link rel="stylesheet" href="style.css?v=3">
+<link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
 <div class="wrap">
@@ -28,7 +28,7 @@
         <input type="text" id="inCode" placeholder="Code de récupération" autocomplete="off" spellcheck="false">
         <button class="cta" id="codeBtn">Récupérer mon personnage</button>
       </div>
-      <div class="center"><button class="linkbtn" id="seeRank">Voir le classement de la guilde</button></div>
+      <div class="center"><button class="linkbtn" id="seeRank">Voir le classement de la guilde</button> <button class="linkbtn" id="cancelAdd" hidden>← Retour à mes personnages</button></div>
       <p class="center" style="font-size:11px;color:var(--dim)">Aucune donnée personnelle : seuls le nom du personnage, sa classe, sa faction et sa progression sont enregistrés.</p>
     </div>
   </section>
@@ -40,9 +40,9 @@
 
   <!-- APPLICATION -->
   <div id="screen-app" hidden>
-    <div class="who"><span id="syncBadge" class="sync">…</span><button class="linkbtn" id="switchBtn">Changer de personnage</button></div>
+    <div class="who"><span id="syncBadge" class="sync">…</span><button class="linkbtn" id="switchBtn">Mes personnages</button></div>
     <header class="panel hero">
-      <div class="crest"><svg viewBox="0 0 64 64" fill="none" stroke="#e6c36a" stroke-width="3" stroke-linejoin="round"><path d="M32 6 L38 22 L52 12 L44 30 L58 34 L40 40 L46 58 L32 46 L18 58 L24 40 L6 34 L20 30 L12 12 L26 22 Z" fill="#8e1b10"/></svg></div>
+      <div class="crest" id="heroCrest"></div>
       <div>
         <h1 id="heroName"></h1>
         <div class="sub" id="heroSub"></div>
@@ -52,6 +52,7 @@
         <div class="big"><div class="n" id="hT0">0/8</div><div class="l">T0</div></div>
         <div class="big"><div class="n" id="hT05">0/8</div><div class="l">T0.5</div></div>
         <div class="big"><div class="n" id="hQ">0%</div><div class="l">Chaîne de quêtes</div></div>
+        <div class="big"><div class="n" id="hBis">—</div><div class="l">BiS</div></div>
       </div>
     </header>
 
@@ -60,7 +61,9 @@
       <button data-v="t05" id="tabT05">T0.5</button>
       <button data-v="quest">Chaîne de quêtes T0.5</button>
       <button data-v="mats">Matériaux &amp; or</button>
+      <button data-v="bis">⚔ BiS</button>
       <button data-v="rank">🏆 Classement</button>
+      <button data-v="profile">👤 Profil</button>
     </nav>
 
     <section class="view on" id="v-t0"><div class="grid">
@@ -104,6 +107,18 @@
       </div>
     </div></section>
 
+    <section class="view" id="v-bis">
+      <div class="panel"><h2>Best in Slot <small>listes Pre Raid Forever · choisis ta spécialisation</small></h2>
+        <div id="bisBox"></div>
+        <div class="chk info" style="margin-top:12px">Clique une ligne pour la cocher quand tu possèdes le BiS de l'emplacement. Noms, icônes et niveaux d'objet : Wowhead Forever (fr). Choix des BiS : listes « Pre Raid » Forever (wowtbc.gg), à confirmer en jeu.</div></div>
+    </section>
+
+    <section class="view" id="v-profile">
+      <div class="panel"><h2>Mes personnages <small>spécialisation, changement de personnage</small></h2>
+        <div class="chk info">Ajoute plusieurs personnages et indique leur spécialisation : les listes BiS en dépendent. Chaque personnage garde sa propre progression.</div>
+        <div id="profileBox"></div></div>
+    </section>
+
     <section class="view" id="v-rank">
       <div class="panel"><h2>Classement T0 / T0.5 <small>le plus avancé en haut</small></h2><div id="rankBox"></div></div>
     </section>
@@ -114,9 +129,10 @@
 
 <div class="modal" id="memberModal" hidden><div class="panel modal-box" id="memberBox"></div></div>
 
-<script src="config.js?v=3"></script>
-<script src="data.js?v=3"></script>
-<script src="chain.js?v=3"></script>
-<script src="app.js?v=3"></script>
+<script src="config.js?v=4"></script>
+<script src="data.js?v=4"></script>
+<script src="bis.js?v=4"></script>
+<script src="chain.js?v=4"></script>
+<script src="app.js?v=4"></script>
 </body>
 </html>

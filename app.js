@@ -30,6 +30,15 @@ const T0SRC = {
 const T05STEP = { wrist: "q1", hands: "q8", waist: "q8", feet: "q17", legs: "q17", shoulder: "q17", head: "q29", chest: "q29" };
 const T05QNAME = { q1: "Une proposition sérieuse", q8: "Une juste compensation", q17: "Les adieux d'Anthion", q29: "Garder le meilleur pour la fin" };
 const MAX_POINTS = 8 + 8 + 29;
+const BIS = window.TIER_BIS;
+const BIS_ORDER = ["head", "neck", "shoulder", "back", "chest", "wrist", "hands", "waist", "legs", "feet", "finger1", "finger2", "trinket1", "trinket2", "weapon", "offhand", "ranged"];
+const BIS_SLOT_FR = { head: "Tête", neck: "Cou", shoulder: "Épaules", back: "Dos", chest: "Torse", wrist: "Poignets", hands: "Mains", waist: "Taille", legs: "Jambes", feet: "Pieds", finger1: "Anneau 1", finger2: "Anneau 2", trinket1: "Bijou 1", trinket2: "Bijou 2", weapon: "Arme", offhand: "Main gauche / bouclier", ranged: "Distance" };
+const QCOL = ["#9d9d9d", "#ffffff", "#1eff00", "#0070dd", "#a335ee", "#ff8000"];
+const ROLE_FR = { dps: "DPS", tank: "Tank", heal: "Soins" };
+const portrait = (cls, px) => `<img class="cls-ico" src="https://wow.zamimg.com/images/wow/icons/large/classicon_${cls}.jpg" width="${px}" height="${px}" alt="" onerror="this.style.display='none'">`;
+const specList = cls => (BIS && BIS.specs[cls]) || {};
+const specFr = (cls, spec) => (spec && specList(cls)[spec] ? specList(cls)[spec].fr : spec || "");
+const bisTotal = (cls, spec) => (specList(cls)[spec] ? Object.keys(specList(cls)[spec].slots).length : 0);
 
 // Composants de classe de la chaîne (source : HardcoreHelper, à confirmer en jeu)
 const COMP = {
@@ -86,11 +95,19 @@ async function rpc(fn, args) {
 }
 
 /* ============ ÉTAT ============ */
-let profile = null;   // { name, cls, faction }
+let profile = null;   // { name, cls, faction, spec }
+function getChars() { try { const a = JSON.parse(ls.get("tier-chars") || "[]"); return Array.isArray(a) ? a : []; } catch (_) { return []; } }
+function saveChars(a) { ls.set("tier-chars", JSON.stringify(a)); }
+function upsertChar(c) {
+  const a = getChars(), k = nameKey(c.name), i = a.findIndex(x => nameKey(x.name) === k);
+  const entry = { name: c.name, cls: c.cls, faction: c.faction, spec: c.spec || null };
+  if (i >= 0) a[i] = Object.assign(a[i], entry); else a.push(entry);
+  saveChars(a);
+}
 let token = null;
 let ctx = null;       // données adaptées à la classe / faction
 let st = emptyState();
-function emptyState() { return { t0: {}, t05: {}, q: {}, m: {}, c: {} }; }
+function emptyState() { return { t0: {}, t05: {}, q: {}, m: {}, c: {}, bis: {} }; }
 const stateKey = () => "tier-state:" + nameKey(profile.name);
 
 /* ============ DONNÉES ADAPTÉES ============ */
@@ -191,7 +208,8 @@ function renderHeader() {
   root.setProperty("--accent-glow", `rgba(${r},${g},${b},.35)`);
   root.setProperty("--accent-soft", `rgba(${r},${g},${b},.16)`);
   $("heroName").textContent = profile.name;
-  $("heroSub").innerHTML = `<b>${c.fr}</b> · ${FACTIONS[profile.faction]} · ❮BroForever❯ · WoW Forever EU`;
+  $("heroCrest").innerHTML = portrait(profile.cls, 80);
+  $("heroSub").innerHTML = `<b>${c.fr}</b>${profile.spec ? " · " + esc(specFr(profile.cls, profile.spec)) : ""} · ${FACTIONS[profile.faction]} · ❮BroForever❯ · WoW Forever EU`;
   $("heroSets").innerHTML = `Suivi de progression des sets <b style="color:var(--gold)">T0</b> (${esc(ctx.set.t0.name)}) et <b style="color:var(--gold)">T0.5</b> (${esc(ctx.set.t05.name)})`;
   $("tabT0").textContent = "T0 · " + ctx.set.t0.name;
   $("tabT05").textContent = "T0.5 · " + ctx.set.t05.name;
@@ -311,7 +329,7 @@ function scheduleSave() {
 async function flush() {
   if (!profile || !dirty) return;
   try {
-    const r = await rpc("tier_save", { p_name: profile.name, p_class: profile.cls, p_faction: profile.faction, p_state: st, p_token: token });
+    const r = await rpc("tier_save", { p_name: profile.name, p_class: profile.cls, p_faction: profile.faction, p_state: st, p_token: token, p_spec: profile.spec || null });
     if (r && r.ok) { dirty = false; setSync("ok"); }
     else if (r && r.error === "owned") setSync("off", "nom déjà utilisé par un autre appareil");
     else setSync("off", "refusé (" + (r && r.error) + ")");
@@ -331,13 +349,14 @@ function memberHTML(p, state) {
   const piece = (t, done, color) => `<div class="piece ${done ? "done" : ""}" style="--q:${color(t)}"><div class="box">✓</div><div class="slot">${t.s}</div>
     <div class="pi"><div class="pn">${aItem(t.wh, esc(t.n))}</div></div><div class="il">${t.i}</div></div>`;
   return `<h2><span>Fiche de ${esc(p.name)}</span> <button class="x" id="memberClose">Fermer ✕</button></h2>
-    <div class="m-head"><div><h3 style="color:${c.color}">${esc(p.name)}</h3>
-      <div class="sub"><b style="color:${c.color}">${c.fr}</b> · ${FACTIONS[p.faction]} · ❮BroForever❯</div></div>
+    <div class="m-head">${portrait(p.cls, 64)}<div><h3 style="color:${c.color}">${esc(p.name)}</h3>
+      <div class="sub"><b style="color:${c.color}">${c.fr}</b>${p.spec ? " · " + esc(specFr(p.cls, p.spec)) : ""} · ${FACTIONS[p.faction]} · ❮BroForever❯</div></div>
       <div class="stats"><div class="big"><div class="n">${c0}/8</div><div class="l">T0</div></div><div class="big"><div class="n">${c5}/8</div><div class="l">T0.5</div></div>
       <div class="big"><div class="n">${cq}/${x.nQ}</div><div class="l">Quêtes</div></div><div class="big"><div class="n">${pct}%</div><div class="l">Avancement</div></div></div></div>
     <div class="bar ${pct === 100 ? "ok" : ""}" style="margin-bottom:16px"><i style="width:${pct}%"></i></div>
     <div class="m-cols"><div><div class="phase"><span>T0 — ${esc(x.set.t0.name)}</span><span>${c0}/8</span></div>${x.T0.map(t => piece(t, s.t0[t.id], () => "#0070dd")).join("")}</div>
       <div><div class="phase"><span>T0.5 — ${esc(x.set.t05.name)}</span><span>${c5}/8</span></div>${x.T05.map(t => piece(t, s.t05[t.id], t2 => t2.q === "epic" ? "#a335ee" : "#0070dd")).join("")}</div></div>
+    ${p.spec ? bisReadonly(p.cls, p.spec, s) : ""}
     <div class="m-steps">${x.Q.map(ph => { const d = ph[1].filter(t => s.q[t.id]).length;
       return `<div class="phase"><span>${ph[0]}</span><span>${d}/${ph[1].length}</span></div>` + ph[1].map(t => `<div class="step ${s.q[t.id] ? "done" : ""}"><div class="box">✓</div><div class="sn">${esc(t.n)}</div></div>`).join(""); }).join("")}</div>`;
 }
@@ -348,7 +367,7 @@ async function showMember(name) {
   try {
     const info = await rpc("tier_load", { p_name: name, p_token: null });
     if (!info || !info.exists) { box.innerHTML = '<div class="chk warn">Personnage introuvable (supprimé ?).</div>'; return; }
-    box.innerHTML = memberHTML({ name: info.name, cls: info.class, faction: info.faction }, info.state);
+    box.innerHTML = memberHTML({ name: info.name, cls: info.class, faction: info.faction, spec: info.spec }, info.state);
     try { window.$WowheadPower && $WowheadPower.refreshLinks(); } catch (_) {}
   } catch (e) { box.innerHTML = '<div class="chk warn">Fiche indisponible pour le moment (connexion).</div>'; }
   const close = $("memberClose"); if (close) close.onclick = () => { modal.hidden = true; };
@@ -373,22 +392,118 @@ async function loadRanking(box) {
     box.querySelector(".rk-body").innerHTML = list.length ? list.map((r, i) => {
       const c = CLASSES[r.class] || { fr: r.class, color: "#999" }, pct = Math.round(r.score / MAX_POINTS * 100);
       const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : i + 1;
-      return `<tr class="${me && nameKey(r.name) === me ? "me" : ""}"><td class="pos">${medal}</td><td class="nm" style="color:${c.color}"><a class="mlink" data-name="${esc(r.name)}" title="Voir la progression de ${esc(r.name)}">${esc(r.name)}</a></td>
-        <td class="hide-s">${c.fr}</td><td class="hide-s ${r.faction === "horde" ? "fac-h" : "fac-a"}">${FACTIONS[r.faction] || r.faction}</td>
-        <td class="num">${r.t0}/8</td><td class="num">${r.t05}/8</td><td class="num hide-s">${r.quests}/29</td>
+      return `<tr class="${me && nameKey(r.name) === me ? "me" : ""}"><td class="pos">${medal}</td><td class="nm" style="color:${c.color}">${portrait(r.class, 24)}<a class="mlink" data-name="${esc(r.name)}" title="Voir la progression de ${esc(r.name)}">${esc(r.name)}</a></td>
+        <td class="hide-s">${c.fr}${r.spec ? `<div class="sub2">${esc(specFr(r.class, r.spec))}</div>` : ""}</td><td class="hide-s ${r.faction === "horde" ? "fac-h" : "fac-a"}">${FACTIONS[r.faction] || r.faction}</td>
+        <td class="num">${r.t0}/8</td><td class="num">${r.t05}/8</td><td class="num hide-s">${r.quests}/29</td><td class="num hide-s">${r.spec && bisTotal(r.class, r.spec) ? (r.bis || 0) + "/" + bisTotal(r.class, r.spec) : "—"}</td>
         <td class="pct"><b>${pct}%</b><div class="bar ${pct === 100 ? "ok" : ""}"><i style="width:${pct}%"></i></div></td><td class="when hide-s">${ago(r.updated_at)}</td></tr>`;
-    }).join("") : `<tr><td colspan="9" style="color:var(--dim);padding:18px">Personne dans ce filtre pour l'instant.</td></tr>`;
+    }).join("") : `<tr><td colspan="10" style="color:var(--dim);padding:18px">Personne dans ce filtre pour l'instant.</td></tr>`;
   };
   box.innerHTML = `<div class="rank-tools">
       <select class="f-cls"><option value="">Toutes les classes</option>${Object.entries(CLASSES).map(([k, c]) => `<option value="${k}">${c.fr}</option>`).join("")}</select>
       <select class="f-fac"><option value="">Les deux factions</option><option value="horde">Horde</option><option value="alliance">Alliance</option></select>
       <button class="linkbtn rk-refresh">↻ Actualiser</button><span style="color:var(--dim);font-size:12px">${rows.length} personnage(s) · avancement = pièces T0 + pièces T0.5 + étapes de quête (sur ${MAX_POINTS})</span></div>
-    <div style="overflow-x:auto"><table class="rank"><thead><tr><th>#</th><th>Personnage</th><th class="hide-s">Classe</th><th class="hide-s">Faction</th><th>T0</th><th>T0.5</th><th class="hide-s">Quêtes</th><th>Avancement</th><th class="hide-s">Mis à jour</th></tr></thead><tbody class="rk-body"></tbody></table></div>`;
+    <div style="overflow-x:auto"><table class="rank"><thead><tr><th>#</th><th>Personnage</th><th class="hide-s">Classe</th><th class="hide-s">Faction</th><th>T0</th><th>T0.5</th><th class="hide-s">Quêtes</th><th class="hide-s">BiS</th><th>Avancement</th><th class="hide-s">Mis à jour</th></tr></thead><tbody class="rk-body"></tbody></table></div>`;
   box.querySelector(".f-cls").onchange = draw; box.querySelector(".f-fac").onchange = draw;
   box.querySelector(".rk-refresh").onclick = () => loadRanking(box);
   box.querySelector(".rk-body").addEventListener("click", e => { const a = e.target.closest(".mlink"); if (a) showMember(a.dataset.name); });
   draw();
 }
+
+/* ============ BIS (Best in Slot par classe et spécialisation) ============ */
+const bisKey = (spec, slot) => spec + "|" + slot;
+const itemInfo = id => (BIS && BIS.items[id]) || ["#" + id, 1, "", 0];
+const iconImg = (ic, px) => ic ? `<img class="it-ico" src="https://wow.zamimg.com/images/wow/icons/medium/${ic}.jpg" width="${px}" height="${px}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">` : "";
+const aForever = (id, html) => `<a href="https://www.wowhead.com/forever/fr/item=${id}" target="_blank" rel="noopener">${html}</a>`;
+function itemLine(id, big) {
+  const it = itemInfo(id);
+  return `${iconImg(it[2], big ? 34 : 22)}<span class="bn" style="color:${QCOL[it[1]] || "#fff"}">${aForever(id, esc(it[0]))}</span>${it[3] ? `<span class="il">${it[3]}</span>` : ""}`;
+}
+function bisSlots(cls, spec) {
+  const d = specList(cls)[spec];
+  return d ? BIS_ORDER.filter(s => d.slots[s]).map(s => [s, d.slots[s]]) : [];
+}
+function bisDone(state, spec, slots) { return slots.filter(([s]) => state.bis && state.bis[bisKey(spec, s)]).length; }
+function updateBisStat() {
+  const slots = profile && profile.spec ? bisSlots(profile.cls, profile.spec) : [];
+  $("hBis").textContent = slots.length ? bisDone(st, profile.spec, slots) + "/" + slots.length : "—";
+}
+function setSpec(spec) {
+  profile.spec = spec || null;
+  ls.set("tier-profile", JSON.stringify(profile));
+  upsertChar(profile);
+  renderHeader(); updateBisStat(); renderBis();
+  dirty = true; scheduleSave();
+}
+function renderBis() {
+  const box = $("bisBox"), specs = specList(profile.cls);
+  if (!BIS || !Object.keys(specs).length) { box.innerHTML = '<div class="chk warn">Pas de liste BiS disponible pour cette classe.</div>'; return; }
+  const pills = `<div class="spec-pills">${Object.entries(specs).map(([k, d]) => `<button type="button" class="choice ${profile.spec === k ? "on" : ""}" data-spec="${esc(k)}" style="--c:${CLASSES[profile.cls].color}"><span class="dot"></span>${esc(d.fr)} <small>${ROLE_FR[d.role]}</small></button>`).join("")}</div>`;
+  if (!profile.spec || !specs[profile.spec]) {
+    box.innerHTML = `<div class="chk info"><b>Choisis ta spécialisation</b> : les BiS changent selon la spé. Tu pourras la modifier à tout moment (ici ou dans l'onglet Profil).</div>${pills}`;
+    return;
+  }
+  const slots = bisSlots(profile.cls, profile.spec), done = bisDone(st, profile.spec, slots), pct = slots.length ? done / slots.length * 100 : 0;
+  box.innerHTML = `${pills}
+    <div class="phase" style="margin-top:14px"><span>BiS — ${esc(specs[profile.spec].fr)}</span><span>${done} / ${slots.length}</span></div>
+    <div class="bar ${done === slots.length ? "ok" : ""}" style="margin-bottom:10px"><i style="width:${pct}%"></i></div>
+    ${slots.map(([slot, d]) => { const k = bisKey(profile.spec, slot), ok = !!st.bis[k];
+      return `<div class="bis-row ${ok ? "done" : ""}" data-bis="${esc(k)}"><div class="bis-top"><div class="box">✓</div><div class="slot">${BIS_SLOT_FR[slot] || slot}</div>
+        <div class="bis-main">${itemLine(d.p, true)}</div></div>
+        ${d.a.length ? `<details class="bis-alt"><summary>${d.a.length} alternative${d.a.length > 1 ? "s" : ""}</summary>${d.a.map(id => `<div class="alt">${itemLine(id, false)}</div>`).join("")}</details>` : ""}</div>`; }).join("")}`;
+  try { window.$WowheadPower && $WowheadPower.refreshLinks(); } catch (_) {}
+}
+function bisReadonly(cls, spec, state) {
+  const slots = bisSlots(cls, spec);
+  if (!slots.length) return "";
+  const done = bisDone(state, spec, slots);
+  return `<div class="phase" style="margin-top:16px"><span>BiS — ${esc(specFr(cls, spec))}</span><span>${done}/${slots.length}</span></div>
+    <div class="m-bis">${slots.map(([slot, d]) => { const ok = state.bis && state.bis[bisKey(spec, slot)];
+      return `<div class="piece ${ok ? "done" : ""}"><div class="box">✓</div><div class="slot">${BIS_SLOT_FR[slot] || slot}</div><div class="pi bis-main">${itemLine(d.p, false)}</div></div>`; }).join("")}</div>`;
+}
+
+/* ============ PROFIL (personnages et spécialisations) ============ */
+const countTrue = o => Object.values(o || {}).filter(Boolean).length;
+function localState(name) { try { return Object.assign(emptyState(), JSON.parse(ls.get("tier-state:" + nameKey(name)) || "{}")); } catch (_) { return emptyState(); } }
+function renderProfile() {
+  const chars = getChars(), box = $("profileBox"), me = profile ? nameKey(profile.name) : "";
+  box.innerHTML = chars.map(c => {
+    const s = c.name === (profile && profile.name) ? st : localState(c.name), active = nameKey(c.name) === me, cl = CLASSES[c.cls] || CLASSES.druid;
+    return `<div class="pcard ${active ? "active" : ""}">${portrait(c.cls, 56)}
+      <div class="pinfo"><div class="pname" style="color:${cl.color}">${esc(c.name)}${active ? ' <span class="tag">actif</span>' : ""}</div>
+        <div class="psub">${cl.fr} · ${FACTIONS[c.faction]} · T0 ${countTrue(s.t0)}/8 · T0.5 ${countTrue(s.t05)}/8 · quêtes ${countTrue(s.q)}/29</div>
+        <div class="pspec"><label>Spécialisation</label><select data-spec-for="${esc(c.name)}"><option value="">— non définie —</option>${Object.entries(specList(c.cls)).map(([k, d]) => `<option value="${esc(k)}" ${c.spec === k ? "selected" : ""}>${esc(d.fr)} (${ROLE_FR[d.role]})</option>`).join("")}</select></div></div>
+      <div class="pbtns">${active ? "" : `<button data-act="use" data-name="${esc(c.name)}">Utiliser</button>`}<button data-act="del" data-name="${esc(c.name)}">Supprimer</button></div></div>`;
+  }).join("") + `<button class="cta" id="addChar" style="margin-top:6px">+ Ajouter un personnage</button>`;
+}
+async function setCharSpec(name, spec) {
+  if (profile && nameKey(name) === nameKey(profile.name)) { setSpec(spec); renderProfile(); return; }
+  const a = getChars(), c = a.find(x => nameKey(x.name) === nameKey(name)); if (!c) return;
+  c.spec = spec || null; saveChars(a);
+  try {
+    await rpc("tier_save", { p_name: c.name, p_class: c.cls, p_faction: c.faction, p_state: localState(c.name), p_token: ls.get("tier-token:" + nameKey(c.name)), p_spec: c.spec });
+  } catch (_) { /* la spé sera envoyée à la prochaine synchro de ce personnage */ }
+}
+function switchTo(c) {
+  if (dirty) flush();
+  profile = { name: c.name, cls: c.cls, faction: c.faction, spec: c.spec || null };
+  token = ls.get("tier-token:" + nameKey(c.name));
+  ls.set("tier-profile", JSON.stringify(profile));
+  st = localState(c.name);
+  enterApp();
+  const b = document.querySelector('#tabs [data-v="profile"]'); if (b) b.click();
+}
+async function deleteChar(name) {
+  if (!confirm("Supprimer " + name + " du classement et de ce navigateur ? Cette action est définitive.")) return;
+  const key = nameKey(name), tk = ls.get("tier-token:" + key);
+  try { await rpc("tier_delete", { p_name: name, p_token: tk }); } catch (_) { alert("Suppression impossible (connexion). Réessaie."); return; }
+  ls.del("tier-state:" + key); ls.del("tier-token:" + key);
+  const rest = getChars().filter(x => nameKey(x.name) !== key); saveChars(rest);
+  if (profile && nameKey(profile.name) === key) {
+    dirty = false;
+    if (rest.length) switchTo(rest[0]); else { ls.del("tier-profile"); profile = null; show("login"); }
+  } else renderProfile();
+}
+let addingChar = false;
 
 /* ============ ÉCRANS ============ */
 function show(which) {
@@ -399,7 +514,7 @@ function show(which) {
 
 let pick = { cls: null, faction: null };
 function buildLogin() {
-  $("clsChoices").innerHTML = Object.entries(CLASSES).map(([k, c]) => `<button type="button" class="choice" data-cls="${k}" style="--c:${c.color}"><span class="dot"></span>${c.fr}</button>`).join("");
+  $("clsChoices").innerHTML = Object.entries(CLASSES).map(([k, c]) => `<button type="button" class="choice" data-cls="${k}" style="--c:${c.color}">${portrait(k, 24)}${c.fr}</button>`).join("");
   $("facChoices").innerHTML = Object.entries(FACTIONS).map(([k, f]) => `<button type="button" class="choice ${k}" data-fac="${k}"><span class="dot"></span>${f}</button>`).join("");
   const upd = () => {
     document.querySelectorAll("#clsChoices .choice").forEach(b => b.classList.toggle("on", b.dataset.cls === pick.cls));
@@ -413,6 +528,7 @@ function buildLogin() {
   $("goBtn").onclick = () => startSession(normName($("inName").value), pick.cls, pick.faction);
   $("seeRank").onclick = () => { show("rank"); loadRanking($("rankBoxAlone")); };
   $("backLogin").onclick = () => show("login");
+  $("cancelAdd").onclick = () => { addingChar = false; $("cancelAdd").hidden = true; show("app"); };
   $("codeBtn").onclick = async () => {
     const name = normName($("inName").value), code = $("inCode").value.trim();
     if (code.length < 16) { $("loginErr").textContent = "Code invalide."; return; }
@@ -439,8 +555,10 @@ async function startSession(name, cls, faction) {
   }
   ls.set("tier-token:" + key, tk);
   token = tk;
-  profile = { name: info && info.exists ? info.name : name, cls, faction };
+  profile = { name: info && info.exists ? info.name : name, cls, faction, spec: info && info.exists ? info.spec || null : null };
+  addingChar = false; $("cancelAdd").hidden = true;
   ls.set("tier-profile", JSON.stringify(profile));
+  upsertChar(profile);
   let local = null;
   try { local = JSON.parse(ls.get("tier-state:" + key) || "null"); } catch (_) {}
   st = Object.assign(emptyState(), local || (info && info.exists && info.state) || {});
@@ -454,6 +572,7 @@ function enterApp() {
   renderHeader();
   show("app");
   render();
+  updateBisStat();
   flush();
   try { const t = ls.get("tier-tab"); const b = t && document.querySelector(`#tabs button[data-v="${t}"]`); if (b) b.click(); } catch (_) {}
 }
@@ -480,6 +599,24 @@ $("tabs").addEventListener("click", e => {
   document.querySelectorAll("#screen-app .view").forEach(v => v.classList.toggle("on", v.id === "v-" + b.dataset.v));
   ls.set("tier-tab", b.dataset.v);
   if (b.dataset.v === "rank") loadRanking($("rankBox"));
+  if (b.dataset.v === "bis") renderBis();
+  if (b.dataset.v === "profile") renderProfile();
+});
+document.addEventListener("click", e => {
+  if (!profile || $("screen-app").hidden) return;
+  const pill = e.target.closest("[data-spec]");
+  if (pill && $("bisBox").contains(pill)) { setSpec(pill.dataset.spec); return; }
+  if (e.target.closest("a,input,button,summary,details")) return;
+  const row = e.target.closest("[data-bis]");
+  if (row && $("bisBox").contains(row)) { const k = row.dataset.bis; st.bis[k] = !st.bis[k]; renderBis(); updateBisStat(); scheduleSave(); }
+});
+$("profileBox").addEventListener("change", e => { const sel = e.target.closest("[data-spec-for]"); if (sel) setCharSpec(sel.dataset.specFor, sel.value); });
+$("profileBox").addEventListener("click", e => {
+  const add = e.target.closest("#addChar");
+  if (add) { addingChar = true; $("cancelAdd").hidden = false; $("inName").value = ""; $("loginErr").textContent = ""; show("login"); return; }
+  const b = e.target.closest("[data-act]"); if (!b) return;
+  const c = getChars().find(x => x.name === b.dataset.name); if (!c) return;
+  if (b.dataset.act === "use") switchTo(c); else deleteChar(c.name);
 });
 $("qall").onclick = () => { ctx.Q.flatMap(p => p[1]).forEach(s => { st.q[s.id] = true; ctx.T05.filter(p => p.step === s.id).forEach(p => st.t05[p.id] = true); }); render(); };
 $("qnone").onclick = () => { st.q = {}; render(); };
@@ -490,13 +627,8 @@ $("showCode").onclick = () => {
   const box = $("codeBox"); box.hidden = false;
   box.innerHTML = `Code de récupération (garde-le pour retrouver ton personnage sur un autre navigateur ; ne le partage pas) :<br><b style="user-select:all;word-break:break-all">${esc(token)}</b>`;
 };
-$("delChar").onclick = async () => {
-  if (!confirm("Supprimer " + profile.name + " du classement et de ce navigateur ? Cette action est définitive.")) return;
-  try { await rpc("tier_delete", { p_name: profile.name, p_token: token }); } catch (_) { alert("Suppression impossible (connexion). Réessaie."); return; }
-  const key = nameKey(profile.name); ls.del("tier-state:" + key); ls.del("tier-token:" + key); ls.del("tier-profile");
-  profile = null; dirty = false; show("login");
-};
-$("switchBtn").onclick = () => { if (dirty) flush(); ls.del("tier-profile"); profile = null; document.title = "BroForever — Suivi T0 / T0.5"; show("login"); };
+$("delChar").onclick = () => deleteChar(profile.name);
+$("switchBtn").onclick = () => { const b = document.querySelector('#tabs [data-v="profile"]'); if (b) b.click(); };
 
 /* ============ DÉMARRAGE ============ */
 buildLogin();
@@ -505,6 +637,8 @@ buildLogin();
   try { p = JSON.parse(ls.get("tier-profile") || "null"); } catch (_) {}
   if (p && p.name && SETS.classes[p.cls] && FACTIONS[p.faction]) {
     profile = p; token = ls.get("tier-token:" + nameKey(p.name));
+    if (profile.spec === undefined) profile.spec = null;
+    upsertChar(profile);
     let local = null; try { local = JSON.parse(ls.get("tier-state:" + nameKey(p.name)) || "null"); } catch (_) {}
     st = Object.assign(emptyState(), local || {});
     if (token) { enterApp(); return; }
