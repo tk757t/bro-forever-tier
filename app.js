@@ -180,7 +180,7 @@ function buildCtx(p) {
 }
 
 /* ============ LIENS WOWHEAD ============ */
-const WHB = "https://www.wowhead.com/classic/fr/";
+const WHB = "https://www.wowhead.com/forever/fr/";
 const aItem = (id, t) => `<a href="${WHB}item=${id}" target="_blank" rel="noopener">${t}</a>`;
 const aQuest = (id, t) => `<a href="${WHB}quest=${id}" target="_blank" rel="noopener">${t}</a>`;
 const aSearch = (q, t) => `<a class="srch" href="${WHB}search?q=${encodeURIComponent(q)}" target="_blank" rel="noopener" title="Rechercher sur Wowhead">${t}</a>`;
