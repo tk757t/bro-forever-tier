@@ -107,7 +107,7 @@ function upsertChar(c) {
 let token = null;
 let ctx = null;       // données adaptées à la classe / faction
 let st = emptyState();
-function emptyState() { return { t0: {}, t05: {}, q: {}, m: {}, c: {}, bis: {}, r: {}, eq: {}, race: null }; }
+function emptyState() { return { t0: {}, t05: {}, q: {}, m: {}, c: {}, bis: {}, r: {} }; }
 const stateKey = () => "tier-state:" + nameKey(profile.name);
 
 /* ============ DONNÉES ADAPTÉES ============ */
@@ -370,7 +370,7 @@ function render() {
   $("gold").innerHTML = `<div class="chk info">Pour finir la chaîne, prévois <b>${sure} po</b> (sûr)${maybe ? ` + <b>${maybe} po</b> peut-être (baguette de Vi'el)` : ""}.</div>` +
     goldRows.map(r => `<div class="mat ${r[3] ? "full" : ""}"><div class="mn">${r[0].replace(" (non confirmé)", "")}<small>${r[2].n}</small></div><div class="have"><b class="gp">${r[3] ? "✓" : r[1] + " po"}</b></div></div>`).join("");
 
-  renderRaids(); renderPaper();
+  renderRaids();
   scheduleSave();
   try { window.$WowheadPower && $WowheadPower.refreshLinks(); } catch (_) {}
 }
@@ -481,11 +481,10 @@ async function showMember(name) {
   } catch (e) { box.innerHTML = '<div class="chk warn">Fiche indisponible pour le moment (connexion).</div>'; }
   const close = $("memberClose"); if (close) close.onclick = () => { modal.hidden = true; };
 }
-$("pickModal").addEventListener("click", e => { if (e.target.id === "pickModal") e.currentTarget.hidden = true; });
 $("memberModal").addEventListener("click", e => { if (e.target.id === "memberModal") e.currentTarget.hidden = true; });
 document.addEventListener("keydown", e => {
   if (e.key !== "Escape") return;
-  if (!$("pickModal").hidden) $("pickModal").hidden = true; else if (!$("newsModal").hidden) closeNews(); else $("memberModal").hidden = true;
+  if (!$("newsModal").hidden) closeNews(); else $("memberModal").hidden = true;
 });
 
 /* ============ CLASSEMENT ============ */
@@ -578,7 +577,7 @@ function setSpec(spec) {
   profile.spec = spec || null;
   ls.set("tier-profile", JSON.stringify(profile));
   upsertChar(profile);
-  renderHeader(); updateBisStat(); renderBis(); renderPaper();
+  renderHeader(); updateBisStat(); renderBis();
   dirty = true; scheduleSave();
 }
 function renderBis() {
@@ -611,35 +610,12 @@ function bisReadonly(cls, spec, state) {
 /* ============ PROFIL (personnages et spécialisations) ============ */
 const countTrue = o => Object.values(o || {}).filter(Boolean).length;
 function localState(name) { try { return Object.assign(emptyState(), JSON.parse(ls.get("tier-state:" + nameKey(name)) || "{}")); } catch (_) { return emptyState(); } }
-/* ---- poupée d'équipement (page Profil) : race, objets réellement équipés (tier / BiS / alternatives) ---- */
-const DOLL_L = ["head", "neck", "shoulder", "back", "chest", "shirt", "tabard", "wrist"];
-const DOLL_R = ["hands", "waist", "legs", "feet", "finger1", "finger2", "trinket1", "trinket2"];
-const DOLL_B = ["weapon", "offhand", "ranged"];
-const DOLL_FR = Object.assign({ shirt: "Chemise", tabard: "Tabard" }, BIS_SLOT_FR);
-const WEAPON_ART = { warrior: "sword", paladin: "sword", rogue: "sword", hunter: "bow", druid: "staff", mage: "staff", priest: "staff", warlock: "staff", shaman: "staff" };
-const RACES = {
-  orc:      { fr: "Orc",             fac: "horde",    skin: "#79a44b", sx: 1.1,  sy: 1,    hx: 29, hy: 31, eye: "#ff5a3c" },
-  scourge:  { fr: "Mort-vivant",     fac: "horde",    skin: "#8fa58b", sx: .92,  sy: 1,    hx: 26, hy: 30, eye: "#ffe36e" },
-  tauren:   { fr: "Tauren",          fac: "horde",    skin: "#8c6a49", sx: 1.18, sy: 1.1,  hx: 30, hy: 32, eye: "#2b1b10" },
-  troll:    { fr: "Troll",           fac: "horde",    skin: "#4f93a8", sx: .98,  sy: 1.06, hx: 26, hy: 31, eye: "#ffcf4a" },
-  human:    { fr: "Humain",          fac: "alliance", skin: "#e0b48f", sx: 1,    sy: 1,    hx: 25, hy: 30, eye: "#3a2c1e" },
-  dwarf:    { fr: "Nain",            fac: "alliance", skin: "#d9a07a", sx: 1.1,  sy: .8,   hx: 29, hy: 31, eye: "#2a2a2a" },
-  nightelf: { fr: "Elfe de la nuit", fac: "alliance", skin: "#7d68b8", sx: .92,  sy: 1.1,  hx: 24, hy: 31, eye: "#cfeaff" },
-  gnome:    { fr: "Gnome",           fac: "alliance", skin: "#e7b898", sx: .8,   sy: .64,  hx: 37, hy: 39, eye: "#2a3d66" },
-};
-const RACE_DEFAULT = {
-  horde:    { druid: "tauren", hunter: "orc", mage: "scourge", paladin: "orc", priest: "scourge", rogue: "orc", shaman: "orc", warlock: "orc", warrior: "orc" },
-  alliance: { druid: "nightelf", hunter: "dwarf", mage: "human", paladin: "human", priest: "human", rogue: "human", shaman: "dwarf", warlock: "human", warrior: "human" },
-};
-const curRace = () => (st.race && RACES[st.race] && RACES[st.race].fac === profile.faction) ? st.race : (RACE_DEFAULT[profile.faction][profile.cls] || (profile.faction === "horde" ? "orc" : "human"));
-function setRace(r) { st.race = r; renderPaper(); dirty = true; scheduleSave(); }
-
-// Informations d'un objet : liste BiS, sinon pièce de set (T0 / T0.5) de la classe
+/* ---- informations d'un objet (liste BiS, sinon pièce de set T0 / T0.5 de la classe) : sert aux sources de l'onglet BiS ---- */
 let TIERMAP = null;
 function tierMap() {
   if (TIERMAP && TIERMAP.cls === profile.cls) return TIERMAP.m;
-  const m = {}, icons = window.TIER_ICONS || {};
-  [["T0", ctx.T0], ["T0.5", ctx.T05]].forEach(([tag, list]) => list.forEach(p => { m[p.wh] = { n: p.n, q: p.q === "epic" ? 4 : 3, ic: icons[p.wh] || "", il: p.i, tier: tag, slot: p.id }; }));
+  const m = {};
+  [["T0", ctx.T0], ["T0.5", ctx.T05]].forEach(([tag, list]) => list.forEach(p => { m[p.wh] = { n: p.n, q: p.q === "epic" ? 4 : 3, il: p.i, tier: tag, slot: p.id }; }));
   TIERMAP = { cls: profile.cls, m };
   return m;
 }
@@ -649,165 +625,8 @@ function getItem(id) {
   const b = BIS && BIS.items[id];
   return b ? { n: b[0], q: b[1], ic: b[2], il: b[3] } : { n: "#" + id, q: 1, ic: "", il: 0 };
 }
-const dollIcon = (ic, px) => ic ? `<img src="https://wow.zamimg.com/images/wow/icons/large/${ic}.jpg" width="${px || 52}" height="${px || 52}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">` : "";
-
-// Objets possibles pour un emplacement : set de tier, BiS, alternatives
-function slotCandidates(slot) {
-  const specs = specList(profile.cls), d = profile.spec && specs[profile.spec] ? specs[profile.spec].slots[slot] : null, out = [], seen = new Set();
-  const push = (id, grp) => { if (id && !seen.has(id)) { seen.add(id); out.push({ id, grp }); } };
-  const t0 = ctx.T0.find(p => p.id === slot), t5 = ctx.T05.find(p => p.id === slot);
-  if (t5) push(t5.wh, "Set de tier T0.5");
-  if (t0) push(t0.wh, "Set de tier T0");
-  if (d) { push(d.p, "BiS"); d.a.forEach(a => push(a, "Alternatives")); }
-  return out;
-}
-const eqOf = slot => st.eq && st.eq[slot] ? st.eq[slot] : 0;
-function slotTag(slot, id) {
-  const specs = specList(profile.cls), d = profile.spec && specs[profile.spec] ? specs[profile.spec].slots[slot] : null, t = getItem(id);
-  const tn = tierByName()[t.n]; if (t.tier || tn) return t.tier || tn.tier;
-  if (d && d.p === id) return "BiS";
-  return "Alt.";
-}
-
-function dollSlot(slot, side) {
-  const specs = specList(profile.cls), d = profile.spec && specs[profile.spec] ? specs[profile.spec].slots[slot] : null, cosm = slot === "shirt" || slot === "tabard";
-  if (cosm) return `<div class="dslot ${side} empty"><div class="dico"><span class="dglyph">${DOLL_FR[slot].slice(0, 1)}</span></div><div class="dtx"><span class="dsl">${DOLL_FR[slot]}</span><span class="dn dim">Cosmétique</span></div></div>`;
-  const id = eqOf(slot);
-  if (id) {
-    const it = getItem(id), col = QCOL[it.q] || "#fff";
-    return `<div class="dslot ${side} got" data-dslot="${slot}" style="--q:${col}" title="Clique pour changer l'objet équipé">
-      <div class="dico">${dollIcon(it.ic)}</div>
-      <div class="dtx"><span class="dsl">${DOLL_FR[slot]}${it.il ? ` · <b>${it.il}</b>` : ""} <i class="dtag">${slotTag(slot, id)}</i></span><span class="dn" style="color:${col}">${aForever(id, esc(it.n))}</span></div></div>`;
-  }
-  if (d) {
-    const it = getItem(d.p);
-    return `<div class="dslot ${side} todo" data-dslot="${slot}" title="Clique pour choisir l'objet équipé">
-      <div class="dico">${dollIcon(it.ic)}<span class="dplus">+</span></div>
-      <div class="dtx"><span class="dsl">${DOLL_FR[slot]}</span><span class="dn dim">Objectif : ${esc(it.n)}</span></div></div>`;
-  }
-  const hasTier = !!(ctx.T0.find(p => p.id === slot) || ctx.T05.find(p => p.id === slot));
-  return `<div class="dslot ${side} ${hasTier ? "todo" : "empty"}" ${hasTier ? `data-dslot="${slot}"` : ""}><div class="dico"><span class="dglyph">${(DOLL_FR[slot] || "").slice(0, 1)}</span></div><div class="dtx"><span class="dsl">${DOLL_FR[slot]}</span><span class="dn dim">${profile.spec ? "Pas de BiS" : "Vide"}</span></div></div>`;
-}
-
-/* silhouette SVG de la race, avec les objets équipés */
-function raceHead(r, key, cx, cy, rx, ry) {
-  const eyes = `<circle cx="${cx - 9}" cy="${cy - 2}" r="2.6" fill="${r.eye}" class="eye"/><circle cx="${cx + 9}" cy="${cy - 2}" r="2.6" fill="${r.eye}" class="eye"/>`;
-  const W = "#f1ead2";
-  switch (key) {
-    case "orc": return `<path d="M${cx - rx} ${cy - 4} l-9 -9 l2 17z M${cx + rx} ${cy - 4} l9 -9 l-2 17z" fill="${r.skin}" class="feat"/><path d="M${cx - 15} ${cy - 10} q15 6 30 0" stroke="#233a14" stroke-width="3" fill="none"/>${eyes}<path d="M${cx - 12} ${cy + ry - 7} l-3 -15 l8 8z M${cx + 12} ${cy + ry - 7} l3 -15 l-8 8z" fill="${W}"/><path d="M${cx - 14} ${cy + 12} q14 8 28 0" stroke="#233a14" stroke-width="2.4" fill="none"/>`;
-    case "scourge": return `<ellipse cx="${cx - 9}" cy="${cy - 2}" rx="5.2" ry="5.8" fill="#10151c"/><ellipse cx="${cx + 9}" cy="${cy - 2}" rx="5.2" ry="5.8" fill="#10151c"/>${eyes}<path d="M${cx - 2} ${cy + 6} l2 -5 l2 5z" fill="#10151c"/><path d="M${cx - 12} ${cy + 15} h24" stroke="#10151c" stroke-width="3" stroke-dasharray="3 2.5"/><path d="M${cx - rx + 2} ${cy - 14} q-8 20 -4 38 M${cx + rx - 2} ${cy - 14} q8 20 4 38" stroke="#5b6a73" stroke-width="2" fill="none"/>`;
-    case "tauren": return `<path d="M${cx - rx + 4} ${cy - 18} q-26 -4 -22 -32 q10 14 26 16z M${cx + rx - 4} ${cy - 18} q26 -4 22 -32 q-10 14 -26 16z" fill="#e6dcc2" stroke="#8a7a58" stroke-width="1"/><ellipse cx="${cx - rx - 2}" cy="${cy - 6}" rx="10" ry="5" fill="${r.skin}" transform="rotate(-20 ${cx - rx - 2} ${cy - 6})"/><ellipse cx="${cx + rx + 2}" cy="${cy - 6}" rx="10" ry="5" fill="${r.skin}" transform="rotate(20 ${cx + rx + 2} ${cy - 6})"/><ellipse cx="${cx}" cy="${cy + 13}" rx="17" ry="13" fill="#a8825c"/><circle cx="${cx - 6}" cy="${cy + 15}" r="2.3" fill="#2b1b10"/><circle cx="${cx + 6}" cy="${cy + 15}" r="2.3" fill="#2b1b10"/><circle cx="${cx - 12}" cy="${cy - 3}" r="2.8" fill="${r.eye}"/><circle cx="${cx + 12}" cy="${cy - 3}" r="2.8" fill="${r.eye}"/>`;
-    case "troll": return `<path d="M${cx - 16} ${cy - ry + 2} l4 -26 l6 20 l4 -30 l4 30 l6 -20 l4 26z" fill="#7a3fb0"/><path d="M${cx - rx} ${cy - 2} l-18 -12 l4 20z M${cx + rx} ${cy - 2} l18 -12 l-4 20z" fill="${r.skin}"/>${eyes}<path d="M${cx - 11} ${cy + ry - 8} q-8 -2 -9 -17 q6 4 11 10z M${cx + 11} ${cy + ry - 8} q8 -2 9 -17 q-6 4 -11 10z" fill="${W}"/><path d="M${cx - 12} ${cy + 12} q12 6 24 0" stroke="#173b46" stroke-width="2.2" fill="none"/>`;
-    case "human": return `<path d="M${cx - rx - 2} ${cy + 2} Q${cx - rx} ${cy - ry - 8} ${cx} ${cy - ry - 6} Q${cx + rx} ${cy - ry - 8} ${cx + rx + 2} ${cy + 2} Q${cx + rx - 4} ${cy - 10} ${cx} ${cy - 12} Q${cx - rx + 4} ${cy - 10} ${cx - rx - 2} ${cy + 2}Z" fill="#5b3d28"/>${eyes}<path d="M${cx - 8} ${cy + 14} q8 5 16 0" stroke="#7a4a3a" stroke-width="2" fill="none"/>`;
-    case "dwarf": return `<path d="M${cx - 20} ${cy + 4} q-6 30 20 56 q26 -26 20 -56 q-10 14 -20 14 q-10 0 -20 -14z" fill="#b5651d"/><path d="M${cx - 15} ${cy - 10} q15 6 30 0" stroke="#7a4310" stroke-width="3.4" fill="none"/>${eyes}<ellipse cx="${cx}" cy="${cy + 6}" rx="4" ry="3" fill="#c98a63"/>`;
-    case "nightelf": return `<path d="M${cx - rx + 2} ${cy - 2} l-34 -14 l28 22z M${cx + rx - 2} ${cy - 2} l34 -14 l-28 22z" fill="${r.skin}"/><path d="M${cx - rx} ${cy - 12} q-14 40 -2 70 q10 -30 ${rx} -62z M${cx + rx} ${cy - 12} q14 40 2 70 q-10 -30 -${rx} -62z" fill="#27214a"/><path d="M${cx - rx} ${cy - 6} q${rx} -${ry + 4} ${2 * rx} 0 q-${rx} -8 -${2 * rx} 0z" fill="#27214a"/><circle cx="${cx - 8}" cy="${cy - 1}" r="3" fill="${r.eye}" class="eye"/><circle cx="${cx + 8}" cy="${cy - 1}" r="3" fill="${r.eye}" class="eye"/>`;
-    case "gnome": return `<path d="M${cx - 14} ${cy - ry + 3} q5 -16 14 -6 q9 -10 14 6z" fill="#c14b8a"/>${eyes}<path d="M${cx - 8} ${cy + 12} q8 6 16 0" stroke="#8b4a3a" stroke-width="2" fill="none"/><circle cx="${cx - 16}" cy="${cy + 6}" r="4" fill="#f0a08a" opacity=".6"/><circle cx="${cx + 16}" cy="${cy + 6}" r="4" fill="#f0a08a" opacity=".6"/>`;
-  }
-  return eyes;
-}
-function dollArt(cls, key) {
-  const r = RACES[key], sx = r.sx, sy = r.sy, w = WEAPON_ART[cls] || "staff";
-  const P = (x, y) => [150 + (x - 150) * sx, 408 + (y - 408) * sy];
-  const col = s => { const id = eqOf(s); return id ? (QCOL[getItem(id).q] || "#fff") : null; };
-  const part = (cl, s, extra) => { const c = col(s); return `class="part ${cl}${c ? " lit" : ""}${extra || ""}"${c ? ` style="--pc:${c}"` : ""}`; };
-  const ico = (s, x, y, px) => { const id = eqOf(s); if (!id) return ""; const it = getItem(id); if (!it.ic) return ""; const [X, Y] = P(x, y), c = QCOL[it.q] || "#fff";
-    return `<g class="pin"><rect x="${(X - px / 2 - 1.5).toFixed(1)}" y="${(Y - px / 2 - 1.5).toFixed(1)}" width="${px + 3}" height="${px + 3}" rx="${px / 5}" fill="#0b0d12" stroke="${c}" stroke-width="2"/><image href="https://wow.zamimg.com/images/wow/icons/large/${it.ic}.jpg" x="${(X - px / 2).toFixed(1)}" y="${(Y - px / 2).toFixed(1)}" width="${px}" height="${px}" preserveAspectRatio="xMidYMid slice"/></g>`; };
-  const weapon = w === "bow" ? `<path ${part("weapon", "weapon")} d="M236 150 Q276 250 236 350" fill="none" stroke-width="5"/><line x1="236" y1="150" x2="236" y2="350" stroke="rgba(255,255,255,.35)" stroke-width="1.5"/>`
-    : w === "sword" ? `<path ${part("weapon", "weapon")} d="M240 236 L246 120 L252 236 Z"/><rect ${part("weapon", "weapon")} x="232" y="234" width="28" height="7" rx="3"/><rect ${part("weapon", "weapon")} x="243" y="241" width="6" height="26" rx="3"/>`
-    : `<rect ${part("weapon", "weapon")} x="243" y="120" width="6" height="250" rx="3"/><circle ${part("weapon", "weapon")} cx="246" cy="112" r="14"/>`;
-  const off = ["paladin", "warrior", "shaman"].includes(cls) ? `<path ${part("offhand", "offhand")} d="M40 205 L82 205 L82 250 Q61 276 40 250 Z"/>` : "";
-  const headEq = col("head"), hcx = 150, hcy = 90, hrx = r.hx, hry = r.hy;
-  const helm = headEq ? `<path class="part lit" style="--pc:${headEq}" d="M${hcx - hrx - 2} ${hcy + 2} A${hrx + 2} ${hry + 3} 0 0 1 ${hcx + hrx + 2} ${hcy + 2} L${hcx + hrx - 3} ${hcy - 8} L${hcx - hrx + 3} ${hcy - 8}Z"/>` : "";
-  const bodyY = 408;
-  return `<svg class="dart" viewBox="0 0 300 430" role="img" aria-label="Silhouette ${esc(r.fr)}" style="--skin:${r.skin}">
-    <defs><radialGradient id="dg" cx="50%" cy="46%" r="60%"><stop offset="0" stop-color="var(--accent)" stop-opacity=".38"/><stop offset=".6" stop-color="var(--accent)" stop-opacity=".07"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/></radialGradient></defs>
-    <circle cx="150" cy="215" r="200" fill="url(#dg)"/>
-    <circle class="rune" cx="150" cy="215" r="150" fill="none" stroke-dasharray="3 9"/><circle class="rune" cx="150" cy="215" r="122" fill="none" stroke-dasharray="1 5"/>
-    <ellipse cx="150" cy="${bodyY}" rx="${(86 * sx).toFixed(0)}" ry="11" fill="rgba(0,0,0,.45)"/>
-    <g transform="translate(150 ${bodyY}) scale(${sx} ${sy}) translate(-150 -${bodyY})">
-      <path ${part("cape", "back")} d="M108 140 Q150 122 192 140 L214 372 Q150 392 86 372 Z"/>
-      ${weapon}${off}
-      <rect ${part("legs", "legs")} x="102" y="252" width="43" height="132" rx="10"/><rect ${part("legs", "legs")} x="155" y="252" width="43" height="132" rx="10"/>
-      <path ${part("feet", "feet")} d="M98 378 h50 v18 h-58 q0 -14 8 -18z"/><path ${part("feet", "feet")} d="M152 378 h50 q8 4 8 18 h-58z"/>
-      <path class="part arm" d="M84 150 Q62 210 72 266 L92 268 Q101 214 108 160 Z"/><path class="part arm" d="M216 150 Q238 210 228 266 L208 268 Q199 214 192 160 Z"/>
-      <rect ${part("wrist", "wrist")} x="68" y="222" width="26" height="12" rx="5" transform="rotate(8 81 228)"/><rect ${part("wrist", "wrist")} x="206" y="222" width="26" height="12" rx="5" transform="rotate(-8 219 228)"/>
-      <circle ${part("hands skin", "hands")} cx="81" cy="276" r="13"/><circle ${part("hands skin", "hands")} cx="219" cy="276" r="13"/>
-      <path ${part("chest", "chest")} d="M106 140 Q150 126 194 140 L204 252 Q150 268 96 252 Z"/>
-      <rect ${part("waist", "waist")} x="98" y="244" width="104" height="13" rx="5"/>
-      <ellipse ${part("shoulder", "shoulder")} cx="98" cy="146" rx="28" ry="19" transform="rotate(-18 98 146)"/><ellipse ${part("shoulder", "shoulder")} cx="202" cy="146" rx="28" ry="19" transform="rotate(18 202 146)"/>
-      <rect ${part("neck skin", "neck")} x="139" y="116" width="22" height="20" rx="6"/>
-      <ellipse class="part skin head" cx="${hcx}" cy="${hcy}" rx="${hrx}" ry="${hry}"/>
-      ${raceHead(r, key, hcx, hcy, hrx, hry)}${helm}
-    </g>
-    ${ico("head", 72, 62, 32)}${ico("neck", 150, 134, 20)}${ico("shoulder", 70, 128, 26)}${ico("shoulder", 230, 128, 26)}${ico("chest", 150, 196, 42)}${ico("wrist", 62, 232, 20)}${ico("wrist", 238, 232, 20)}
-    ${ico("hands", 52, 292, 24)}${ico("hands", 248, 292, 24)}${ico("waist", 150, 250, 22)}${ico("legs", 124, 318, 34)}${ico("legs", 176, 318, 34)}${ico("feet", 120, 392, 24)}${ico("feet", 180, 392, 24)}
-    ${ico("weapon", 270, 320, 30)}${ico("offhand", 30, 270, 28)}
-  </svg>`;
-}
-
-function renderPaper() {
-  const box = $("paperBox");
-  if (!box || !profile || !ctx) return;
-  if (!st.eq) st.eq = {};
-  const cl = CLASSES[profile.cls], specs = specList(profile.cls), spec = profile.spec && specs[profile.spec] ? profile.spec : null, d = spec ? specs[spec] : null;
-  const rk = curRace(), race = RACES[rk];
-  const slotsAll = [...DOLL_L, ...DOLL_R, ...DOLL_B].filter(s => s !== "shirt" && s !== "tabard");
-  const eqN = slotsAll.filter(s => eqOf(s)).length;
-  const ils = slotsAll.map(s => eqOf(s) && getItem(eqOf(s)).il).filter(Boolean), avg = ils.length ? Math.round(ils.reduce((a, b) => a + b, 0) / ils.length) : 0;
-  const bisAll = d ? Object.keys(d.slots) : [], have = spec ? bisAll.filter(s => st.bis[bisKey(spec, s)]).length : 0;
-  const c0 = ctx.T0.filter(p => st.t0[p.id]).length, c5 = ctx.T05.filter(p => st.t05[p.id]).length, cq = Object.values(st.q).filter(Boolean).length;
-  const pills = `<div class="spec-pills">${Object.entries(specs).map(([k, s]) => `<button type="button" class="choice ${spec === k ? "on" : ""}" data-spec="${esc(k)}" style="--c:${cl.color}"><span class="dot"></span>${esc(s.fr)} <small>${ROLE_FR[s.role]}</small></button>`).join("")}</div>`;
-  const racePills = `<div class="spec-pills race-pills"><span class="pill-lbl">Race</span>${Object.entries(RACES).filter(([, x]) => x.fac === profile.faction).map(([k, x]) => `<button type="button" class="choice ${rk === k ? "on" : ""}" data-race="${k}" style="--c:${profile.faction === "horde" ? "#e2503f" : "#3b8cff"}"><span class="dot"></span>${esc(x.fr)}</button>`).join("")}</div>`;
-  box.innerHTML = `<div class="doll-top">${racePills}${pills}</div>
-    ${spec ? "" : '<div class="chk info" style="margin-top:12px"><b>Choisis ta spécialisation</b> pour voir les objectifs BiS et les alternatives de chaque emplacement.</div>'}
-    <div class="doll">
-      <div class="dcol l">${DOLL_L.map(s => dollSlot(s, "l")).join("")}</div>
-      <div class="dcenter"><div class="dstage">${dollArt(profile.cls, rk)}<div class="dbadge">${portrait(profile.cls, 56)}</div></div>
-        <div class="dname" style="color:${cl.color}">${esc(profile.name)}</div>
-        <div class="dsub">${race.fr} ${cl.fr.toLowerCase()}${d ? " · " + esc(d.fr) : ""} · <span class="${profile.faction === "horde" ? "fac-h" : "fac-a"}">${FACTIONS[profile.faction]}</span></div>
-        <div class="dbar"><div class="phase" style="margin:0 0 5px"><span>Emplacements équipés</span><span>${eqN} / ${slotsAll.length}</span></div><div class="bar ${eqN === slotsAll.length ? "ok" : ""}"><i style="width:${eqN / slotsAll.length * 100}%"></i></div></div>
-        <div class="dstats"><div><b>${avg || "—"}</b><span>iLvl moyen</span></div><div><b>${spec ? have + "/" + bisAll.length : "—"}</b><span>BiS</span></div><div><b>${c0}/8</b><span>T0</span></div><div><b>${c5}/8</b><span>T0.5</span></div><div><b>${raidPct(countTrue(st.r), profile.faction)}%</b><span>Raids</span></div></div>
-      </div>
-      <div class="dcol r">${DOLL_R.map(s => dollSlot(s, "r")).join("")}</div>
-    </div>
-    <div class="dbottom">${DOLL_B.map(s => dollSlot(s, "b")).join("")}</div>
-    <div class="chk info" style="margin-top:12px">Clique sur un emplacement pour choisir ce que ton personnage porte vraiment : pièce de set <b>T0 / T0.5</b>, objet <b>BiS</b> ou une de ses <b>alternatives</b>. La silhouette reflète ta race et les objets équipés.</div>`;
-  try { window.$WowheadPower && $WowheadPower.refreshLinks(); } catch (_) {}
-}
-
-/* ---- sélecteur d'objet d'un emplacement ---- */
-let pickSlot = null;
-function srcShort(id, slot) {
-  const t = tierMap()[id];
-  if (t) return t.tier === "T0" ? T0SRC[t.slot] : "Quête « " + T05QNAME[T05STEP[t.slot]] + " » (chaîne T0.5)";
-  const rows = sourcesFor(id, slot);
-  return rows.length ? rows[0].plain : "";
-}
-function showPicker(slot) {
-  pickSlot = slot;
-  const cands = slotCandidates(slot), cur = eqOf(slot);
-  const grp = {};
-  cands.forEach(c => { (grp[c.grp] = grp[c.grp] || []).push(c); });
-  const row = c => { const it = getItem(c.id), col = QCOL[it.q] || "#fff", on = cur === c.id;
-    return `<div class="prow ${on ? "on" : ""}" data-pick="${c.id}" style="--q:${col}"><div class="dico">${dollIcon(it.ic, 44)}</div>
-      <div class="ptx"><span class="pn" style="color:${col}">${esc(it.n)}${it.il ? ` <b class="il">${it.il}</b>` : ""}</span><span class="ps">${esc(srcShort(c.id, slot) || "Source non listée")}</span></div><span class="pchk">${on ? "✓ équipé" : "Équiper"}</span></div>`; };
-  $("pickBox").innerHTML = `<h2><span>${DOLL_FR[slot]} <small>choisis l'objet équipé</small></span><button class="x" id="pickX">Fermer ✕</button></h2>
-    ${cur ? `<button class="btn2 sm" data-pickclear="1">Retirer l'objet équipé</button>` : ""}
-    ${cands.length ? Object.entries(grp).map(([g, l]) => `<div class="phase" style="margin-top:12px"><span>${g}</span><span>${l.length}</span></div>${l.map(row).join("")}`).join("") : '<div class="chk info">Aucun objet proposé pour cet emplacement. Choisis une spécialisation pour voir les BiS et leurs alternatives.</div>'}`;
-  $("pickModal").hidden = false;
-  try { window.$WowheadPower && $WowheadPower.refreshLinks(); } catch (_) {}
-}
-function equipItem(slot, id) {
-  if (!st.eq) st.eq = {};
-  if (id) st.eq[slot] = id; else delete st.eq[slot];
-  const specs = specList(profile.cls), d = profile.spec && specs[profile.spec] ? specs[profile.spec].slots[slot] : null;
-  if (d) st.bis[bisKey(profile.spec, slot)] = !!id && (d.p === id || getItem(d.p).n === getItem(id).n);
-  $("pickModal").hidden = true;
-  updateBisStat(); renderPaper(); renderBis(); scheduleSave();
-}
 
 function renderProfile() {
-  renderPaper();
   const chars = getChars(), box = $("profileBox"), me = profile ? nameKey(profile.name) : "";
   box.innerHTML = chars.map(c => {
     const s = c.name === (profile && profile.name) ? st : localState(c.name), active = nameKey(c.name) === me, cl = CLASSES[c.cls] || CLASSES.druid;
@@ -955,10 +774,6 @@ $("tabs").addEventListener("click", e => {
 });
 document.addEventListener("click", e => {
   if (!profile || $("screen-app").hidden) return;
-  const pk = e.target.closest("[data-pick]");
-  if (pk && $("pickModal").contains(pk)) { equipItem(pickSlot, +pk.dataset.pick); return; }
-  if (e.target.closest("[data-pickclear]")) { equipItem(pickSlot, 0); return; }
-  if (e.target.closest("#pickX")) { $("pickModal").hidden = true; return; }
   const rp = e.target.closest("[data-raid]");
   if (rp && $("raidBox").contains(rp)) { curRaid = rp.dataset.raid; renderRaids(); return; }
   const ra = e.target.closest("[data-raidall],[data-raidnone]");
@@ -968,12 +783,8 @@ document.addEventListener("click", e => {
     render(); return;
   }
   const pill = e.target.closest("[data-spec]");
-  if (pill && ($("bisBox").contains(pill) || $("paperBox").contains(pill))) { setSpec(pill.dataset.spec); return; }
+  if (pill && $("bisBox").contains(pill)) { setSpec(pill.dataset.spec); return; }
   if (e.target.closest("a,input,button,summary,details")) return;
-  const rc = e.target.closest("[data-race]");
-  if (rc && $("paperBox").contains(rc)) { setRace(rc.dataset.race); return; }
-  const ds = e.target.closest("[data-dslot]");
-  if (ds && $("paperBox").contains(ds)) { showPicker(ds.dataset.dslot); return; }
   const row = e.target.closest("[data-bis]");
   if (row && $("bisBox").contains(row)) { const k = row.dataset.bis; st.bis[k] = !st.bis[k]; renderBis(); updateBisStat(); scheduleSave(); }
 });
