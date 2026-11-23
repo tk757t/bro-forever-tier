@@ -2,8 +2,16 @@
 // Règle de version :
 //  - petit changement ou correction : seulement +0.0.1 sur TIER_VERSION (aucune entrée, aucun pop-up) ;
 //  - vraie nouveauté : nouvelle version x.y.0 + une entrée en HAUT de TIER_NEWS (le pop-up s'ouvre alors une fois pour chaque membre).
-window.TIER_VERSION = "1.9.0";
+window.TIER_VERSION = "1.10.0";
 window.TIER_NEWS = [
+  {
+    v: "1.10.0", date: "23/11/2026", title: "Ton personnage et son équipement",
+    items: [
+      { t: "🧝 Choisis la race de ton personnage", d: "Orc, Mort-vivant, Tauren, Troll (Horde) ou Humain, Nain, Elfe de la nuit, Gnome (Alliance) : la silhouette du Profil change selon ta race." },
+      { t: "🛡 Équipe ce que ton personnage porte vraiment", d: "Clique sur un emplacement et choisis une pièce de set T0 / T0.5, l'objet BiS ou une de ses alternatives. L'objet apparaît sur la silhouette et dans l'emplacement." },
+      { t: "🗺 Où trouver chaque objet (onglet BiS)", d: "Chaque BiS et chaque alternative indique maintenant comment l'obtenir : boss et donjon avec le % de drop, quête, métier, réputation, JcJ ou drop en monde. Les sources viennent des données du jeu Forever." },
+    ],
+  },
   {
     v: "1.9.0", date: "23/11/2026", title: "Profil : ton équipement en vue",
     items: [

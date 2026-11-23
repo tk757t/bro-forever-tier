@@ -369,3 +369,46 @@ table.rank .nm .cls-ico{width:28px;height:28px;margin-right:10px;border-width:1p
   .dbottom{grid-template-columns:1fr}
 }
 @media (max-width:620px){.doll{grid-template-columns:1fr}.dstats{grid-template-columns:repeat(3,1fr)}}
+
+/* v1.10 : race, équipement réel, sélecteur, sources */
+.doll-top{flex-direction:column;align-items:center;gap:10px}
+.race-pills{justify-content:center;align-items:center}
+.pill-lbl{font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:.06em;margin-right:2px}
+.dslot.todo .dico img{filter:grayscale(1) brightness(.5);opacity:.75}
+.dslot.todo{border-style:dashed}
+.dplus{position:absolute;inset:0;display:grid;place-items:center;font-size:26px;font-weight:800;color:rgba(255,255,255,.75);text-shadow:0 0 6px #000}
+.dslot.got .dico img{filter:none;opacity:1}
+.dtag{font-style:normal;font-size:10px;font-weight:700;padding:1px 6px;border-radius:999px;background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent);margin-left:4px;text-transform:none;letter-spacing:0}
+.dart .part.skin{fill:color-mix(in srgb,var(--skin) 70%,#161b27)}
+.dart .part.lit{fill:color-mix(in srgb,var(--pc,var(--accent)) 58%,#1d2331);stroke:var(--pc,var(--accent));filter:drop-shadow(0 0 6px color-mix(in srgb,var(--pc,var(--accent)) 60%,transparent))}
+.dart .eye{filter:drop-shadow(0 0 3px currentColor)}
+.dart .feat{stroke:rgba(0,0,0,.25)}
+.dart .pin{pointer-events:none;filter:drop-shadow(0 2px 3px rgba(0,0,0,.6))}
+/* sélecteur d'objet */
+.prow{display:flex;gap:12px;align-items:center;padding:8px 10px;border:1px solid var(--edge);border-radius:12px;background:var(--panel2);margin:7px 0;cursor:pointer;transition:.15s}
+.prow:hover{border-color:var(--q,var(--edge2));transform:translateX(2px)}
+.prow.on{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 10%,var(--panel2))}
+.prow .dico{width:44px;height:44px}
+.ptx{flex:1;min-width:0;display:flex;flex-direction:column}
+.pn{font-weight:650;font-size:14.5px}.pn .il{color:var(--gold);font-size:12px;margin-left:4px}
+.ps{font-size:12.5px;color:var(--dim);overflow-wrap:anywhere}
+.pchk{flex:none;font-size:12px;font-weight:700;color:var(--dim)}
+.prow.on .pchk{color:var(--ok)}
+.prow:hover .pchk{color:var(--text)}
+/* sources dans l'onglet BiS */
+.bis-src{margin:6px 0 2px 0;display:flex;flex-direction:column;gap:3px;font-size:13px;color:var(--dim)}
+.bis-src .srow{display:flex;gap:8px;align-items:baseline}
+.bis-src .si{flex:none;width:18px;text-align:center}
+.bis-src b{color:var(--text);font-weight:650}
+.bis-src em{font-style:normal;color:var(--gold);font-size:12px}
+.bis-src.none{font-style:italic}
+.alt{display:flex;flex-direction:column;gap:2px;padding:8px 0;border-bottom:1px dashed var(--edge)}
+.alt:last-child{border-bottom:0}
+.alt .alt-l{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.bis-col{flex:1;min-width:0}.bis-col .bis-src{margin-left:46px}
+
+.dbadge{left:12%;transform:none;bottom:2px}
+.dbadge .cls-ico{width:40px;height:40px}
+
+.bis-alt .alt{align-items:flex-start;text-align:left;justify-content:flex-start}
+.bis-alt .alt .bis-src{margin-left:30px;align-items:flex-start}
