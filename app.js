@@ -107,7 +107,7 @@ function upsertChar(c) {
 let token = null;
 let ctx = null;       // données adaptées à la classe / faction
 let st = emptyState();
-function emptyState() { return { t0: {}, t05: {}, q: {}, m: {}, c: {}, bis: {} }; }
+function emptyState() { return { t0: {}, t05: {}, q: {}, m: {}, c: {}, bis: {}, r: {} }; }
 const stateKey = () => "tier-state:" + nameKey(profile.name);
 
 /* ============ DONNÉES ADAPTÉES ============ */
@@ -370,8 +370,53 @@ function render() {
   $("gold").innerHTML = `<div class="chk info">Pour finir la chaîne, prévois <b>${sure} po</b> (sûr)${maybe ? ` + <b>${maybe} po</b> peut-être (baguette de Vi'el)` : ""}.</div>` +
     goldRows.map(r => `<div class="mat ${r[3] ? "full" : ""}"><div class="mn">${r[0].replace(" (non confirmé)", "")}<small>${r[2].n}</small></div><div class="have"><b class="gp">${r[3] ? "✓" : r[1] + " po"}</b></div></div>`).join("");
 
+  renderRaids();
   scheduleSave();
   try { window.$WowheadPower && $WowheadPower.refreshLinks(); } catch (_) {}
+}
+
+/* ============ PRÉPARATIONS DE RAID (attunements) ============ */
+const RAIDS = window.TIER_RAIDS || [];
+let curRaid = RAIDS.length ? RAIDS[0].id : null;
+const raidKey = (raid, sid) => raid.id + "-" + sid;
+function raidSteps(raid) { return (raid.chains[profile.faction] || []).flatMap(ph => ph[1]); }
+function raidDetail(raid, s) {
+  let h = '<div class="step-detail">';
+  h += `<div class="sdt">📖 Ce qu'il faut faire</div><p>${esc(s.d.replace(/<([^<>\/]+)\/([^<>]+)>/g, "$1/$2"))}</p>`;
+  if (s.r.length) h += `<div class="sdt">🎒 Objectifs</div><ul>${s.r.map(x => `<li>${esc(fixReq(x))}</li>`).join("")}</ul>`;
+  h += `<div class="sdt">📍 Où ?</div><p>${esc(s.loc)}</p>`;
+  if (s.dung) h += `<div class="sdt">⚔ Donjon</div><p>${esc(RAID_DUNG[s.dung])}</p>`;
+  if (s.tips.length) h += `<div class="sdt">💡 Astuces</div><ul>${s.tips.map(t => `<li>${esc(t)}</li>`).join("")}</ul>`;
+  return h + `<p class="sdlink"><a href="https://www.wowhead.com/forever/fr/quest=${s.id}" target="_blank" rel="noopener">Voir la quête sur Wowhead Forever ↗</a></p></div>`;
+}
+const RAID_DUNG = { BRD: "Profondeurs de Blackrock (BRD)", LBRS: "Pic Blackrock inférieur (LBRS)", UBRS: "Pic Blackrock supérieur (UBRS)" };
+function renderRaids() {
+  const box = $("raidBox");
+  if (!box || !profile) return;
+  const raid = RAIDS.find(r => r.id === curRaid);
+  if (!raid) { box.innerHTML = '<div class="chk warn">Aucune préparation de raid disponible pour le moment.</div>'; return; }
+  const chain = raid.chains[profile.faction] || [], steps = raidSteps(raid);
+  const done = steps.filter(s => st.r[raidKey(raid, s.id)]).length, pct = steps.length ? done / steps.length * 100 : 0;
+  const pills = `<div class="spec-pills">${RAIDS.map(r => `<button type="button" class="choice ${r.id === raid.id ? "on" : ""}" data-raid="${r.id}" style="--c:var(--gold)"><span class="dot"></span>${r.icon} ${esc(r.name)}</button>`).join("")}<span class="raid-soon">D'autres raids arrivent bientôt…</span></div>`;
+  const dungs = [...new Set(steps.map(s => s.dung).filter(Boolean))];
+  box.innerHTML = `<div class="grid"><div class="panel"><h2>${raid.icon} ${esc(raid.name)} — ${FACTIONS[profile.faction]} <small>${done} / ${steps.length} étapes</small></h2>${pills}
+      <div class="bar ${done === steps.length ? "ok" : ""}" style="margin:12px 0 6px"><i style="width:${pct}%"></i></div>
+      <div class="qhint">Clique sur une étape pour voir le détail · coche la case à gauche quand elle est terminée.</div>
+      ${chain.map(ph => { const d = ph[1].filter(s => st.r[raidKey(raid, s.id)]).length;
+        return `<div class="phase"><span>${esc(ph[0])}</span><span>${d}/${ph[1].length}</span></div>` + ph[1].map(s => {
+          const sid = "r:" + raidKey(raid, s.id), open = openSteps.has(sid), ok = !!st.r[raidKey(raid, s.id)];
+          return `<div class="step ${ok ? "done" : ""} ${open ? "open" : ""}" data-step="${sid}"><div class="box" data-k="r" data-id="${raidKey(raid, s.id)}" title="Cocher / décocher cette étape">✓</div><div class="step-main">
+            <div class="sn">${aForeverQuest(s.id, esc(s.n))}<em>#${s.id}${s.l ? " · niv. " + s.l : ""}</em></div>
+            <div class="sd"><span class="loc">${esc(s.loc)}</span>${s.dung ? ` <span class="dung-tag">${s.dung}</span>` : ""}</div>${open ? raidDetail(raid, s) : ""}</div><div class="chev" title="${open ? "Replier" : "Voir le détail"}">${open ? "▴" : "▾"}</div></div>`;
+        }).join(""); }).join("")}
+      <div class="btns" style="margin-top:12px"><button data-raidall="1">Tout cocher</button><button data-raidnone="1">Tout décocher</button></div></div>
+    <div class="stack">
+      <div class="panel"><h2>Infos</h2><div class="chk info">${esc(raid.intro)}</div>
+        <div class="chk info">Raid de niveau <b>${raid.level}</b> · <b>${raid.size}</b> joueurs · ${esc(raid.zone)}.<br>Récompense de la chaîne : ${aItem(raid.rewardId, esc(raid.reward))}.</div></div>
+      <div class="panel"><h2>Donjons nécessaires</h2>${dungs.length ? `<div class="chk info">${dungs.map(d => esc(RAID_DUNG[d])).join(" · ")}.</div>` : ""}
+        <div class="chk info">Dans un donjon, vérifie que l'objectif de ta quête se met à jour avant de sortir : un donjon fini ne valide pas la quête tout seul.</div></div>
+      <div class="panel"><h2>Points à vérifier en jeu</h2>${raid.checks.map(c => `<div class="chk warn">${esc(c)}</div>`).join("")}</div>
+    </div></div>`;
 }
 
 /* ============ SYNCHRONISATION ============ */
@@ -655,7 +700,7 @@ document.addEventListener("click", e => {
     return;
   }
   const el = e.target.closest("[data-k]"); if (!el) return;
-  const k = el.dataset.k, id = el.dataset.id; st[k][id] = !st[k][id];
+  const k = el.dataset.k, id = el.dataset.id; if (!st[k]) st[k] = {}; st[k][id] = !st[k][id];
   if (k === "q") ctx.T05.filter(p => p.step === id).forEach(p => { st.t05[p.id] = st.q[id]; });
   render();
 });
@@ -677,6 +722,14 @@ $("tabs").addEventListener("click", e => {
 });
 document.addEventListener("click", e => {
   if (!profile || $("screen-app").hidden) return;
+  const rp = e.target.closest("[data-raid]");
+  if (rp && $("raidBox").contains(rp)) { curRaid = rp.dataset.raid; renderRaids(); return; }
+  const ra = e.target.closest("[data-raidall],[data-raidnone]");
+  if (ra && $("raidBox").contains(ra)) {
+    const raid = RAIDS.find(r => r.id === curRaid);
+    raidSteps(raid).forEach(s => { st.r[raidKey(raid, s.id)] = !!ra.dataset.raidall; });
+    render(); return;
+  }
   const pill = e.target.closest("[data-spec]");
   if (pill && $("bisBox").contains(pill)) { setSpec(pill.dataset.spec); return; }
   if (e.target.closest("a,input,button,summary,details")) return;

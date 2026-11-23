@@ -2,8 +2,16 @@
 // Règle de version :
 //  - petit changement ou correction : seulement +0.0.1 sur TIER_VERSION (aucune entrée, aucun pop-up) ;
 //  - vraie nouveauté : nouvelle version x.y.0 + une entrée en HAUT de TIER_NEWS (le pop-up s'ouvre alors une fois pour chaque membre).
-window.TIER_VERSION = "1.7.4";
+window.TIER_VERSION = "1.8.0";
 window.TIER_NEWS = [
+  {
+    v: "1.8.0", date: "23/11/2026", title: "Préparations de raids : Onyxia",
+    items: [
+      { t: "🐉 Nouvel onglet « Préparations raids »", d: "Suis ta chaîne d'attunement pour entrer dans le repaire d'Onyxia : toutes les quêtes jusqu'à l'Amulette drakefeu, adaptées à ta faction (Alliance ou Horde)." },
+      { t: "📖 Détail de chaque quête", d: "Clique sur une étape pour voir le texte officiel (Wowhead Forever, en français), le lieu, le donjon à prévoir et des astuces. Coche les étapes au fur et à mesure : elles sont sauvegardées avec ton personnage." },
+      { t: "➕ D'autres raids bientôt", d: "On ajoutera les préparations des prochains raids au même endroit." },
+    ],
+  },
   {
     v: "1.7.0", date: "22/11/2026", title: "Chaîne de quêtes détaillée",
     items: [

@@ -313,3 +313,7 @@ table.rank .nm .cls-ico{width:28px;height:28px;margin-right:10px;border-width:1p
 .news-old .news-list{padding:10px}
 .news-old .news-list li{background:var(--bg2)}
 .news-box .cta{margin-top:12px}
+
+/* préparations de raids */
+.raid-soon{align-self:center;color:var(--dim);font-size:12px}
+.dung-tag{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;font-size:11px;font-weight:600;background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent)}
