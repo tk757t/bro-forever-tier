@@ -379,6 +379,8 @@ function render() {
 const RAIDS = window.TIER_RAIDS || [];
 let curRaid = RAIDS.length ? RAIDS[0].id : null;
 const raidKey = (raid, sid) => raid.id + "-" + sid;
+const raidTotal = faction => RAIDS.reduce((n, r) => n + (r.chains[faction] || []).reduce((m, ph) => m + ph[1].length, 0), 0);
+const raidPct = (n, faction) => { const t = raidTotal(faction); return t ? Math.min(100, Math.round((n || 0) / t * 100)) : 0; };
 function raidSteps(raid) { return (raid.chains[profile.faction] || []).flatMap(ph => ph[1]); }
 function raidDetail(raid, s) {
   let h = '<div class="step-detail">';
@@ -459,7 +461,7 @@ function memberHTML(p, state) {
     <div class="m-head">${portrait(p.cls, 64)}<div><h3 style="color:${c.color}">${esc(p.name)}</h3>
       <div class="sub"><b style="color:${c.color}">${c.fr}</b>${p.spec ? " · " + esc(specFr(p.cls, p.spec)) : ""} · ${FACTIONS[p.faction]} · ❮BroForever❯</div></div>
       <div class="stats"><div class="big"><div class="n">${c0}/8</div><div class="l">T0</div></div><div class="big"><div class="n">${c5}/8</div><div class="l">T0.5</div></div>
-      <div class="big"><div class="n">${cq}/${x.nQ}</div><div class="l">Quêtes</div></div><div class="big"><div class="n">${pct}%</div><div class="l">Avancement</div></div></div></div>
+      <div class="big"><div class="n">${cq}/${x.nQ}</div><div class="l">Quêtes</div></div><div class="big"><div class="n">${raidPct(countTrue(s.r), p.faction)}%</div><div class="l">Raids</div></div><div class="big"><div class="n">${pct}%</div><div class="l">Avancement</div></div></div></div>
     <div class="bar ${pct === 100 ? "ok" : ""}" style="margin-bottom:16px"><i style="width:${pct}%"></i></div>
     <div class="m-cols"><div><div class="phase"><span>T0 — ${esc(x.set.t0.name)}</span><span>${c0}/8</span></div>${x.T0.map(t => piece(t, s.t0[t.id], () => "#4a9dff")).join("")}</div>
       <div><div class="phase"><span>T0.5 — ${esc(x.set.t05.name)}</span><span>${c5}/8</span></div>${x.T05.map(t => piece(t, s.t05[t.id], t2 => t2.q === "epic" ? "#c27cff" : "#4a9dff")).join("")}</div></div>
@@ -504,15 +506,15 @@ async function loadRanking(box) {
       const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : i + 1;
       return `<tr class="${me && nameKey(r.name) === me ? "me" : ""}"><td class="pos">${medal}</td><td class="nm" style="color:${c.color}">${portrait(r.class, 24)}<a class="mlink" data-name="${esc(r.name)}" title="Voir la progression de ${esc(r.name)}">${esc(r.name)}</a></td>
         <td class="hide-s">${c.fr}${r.spec ? `<div class="sub2">${esc(specFr(r.class, r.spec))}</div>` : ""}</td><td class="hide-s ${r.faction === "horde" ? "fac-h" : "fac-a"}">${FACTIONS[r.faction] || r.faction}</td>
-        <td class="num">${r.t0}/8</td><td class="num">${r.t05}/8</td><td class="num hide-s">${r.quests}/29</td><td class="num hide-s">${r.spec && bisTotal(r.class, r.spec) ? (r.bis || 0) + "/" + bisTotal(r.class, r.spec) : "—"}</td>
+        <td class="num">${r.t0}/8</td><td class="num">${r.t05}/8</td><td class="num hide-s">${r.quests}/29</td><td class="num hide-s" title="${r.raids || 0}/${raidTotal(r.faction)} étapes">${raidPct(r.raids, r.faction)}%</td><td class="num hide-s">${r.spec && bisTotal(r.class, r.spec) ? (r.bis || 0) + "/" + bisTotal(r.class, r.spec) : "—"}</td>
         <td class="pct"><b>${pct}%</b><div class="bar ${pct === 100 ? "ok" : ""}"><i style="width:${pct}%"></i></div></td><td class="when hide-s">${ago(r.updated_at)}</td></tr>`;
-    }).join("") : `<tr><td colspan="10" style="color:var(--dim);padding:18px">Personne dans ce filtre pour l'instant.</td></tr>`;
+    }).join("") : `<tr><td colspan="11" style="color:var(--dim);padding:18px">Personne dans ce filtre pour l'instant.</td></tr>`;
   };
   box.innerHTML = `<div class="rank-tools">
       <select class="f-cls"><option value="">Toutes les classes</option>${Object.entries(CLASSES).map(([k, c]) => `<option value="${k}">${c.fr}</option>`).join("")}</select>
       <select class="f-fac"><option value="">Les deux factions</option><option value="horde">Horde</option><option value="alliance">Alliance</option></select>
       <button class="linkbtn rk-refresh">↻ Actualiser</button><span style="color:var(--dim);font-size:12px">${rows.length} personnage(s) · avancement = pièces T0 + pièces T0.5 + étapes de quête (sur ${MAX_POINTS})</span></div>
-    <div style="overflow-x:auto"><table class="rank"><thead><tr><th>#</th><th>Personnage</th><th class="hide-s">Classe</th><th class="hide-s">Faction</th><th>T0</th><th>T0.5</th><th class="hide-s">Quêtes</th><th class="hide-s">BiS</th><th>Avancement</th><th class="hide-s">Mis à jour</th></tr></thead><tbody class="rk-body"></tbody></table></div>`;
+    <div style="overflow-x:auto"><table class="rank"><thead><tr><th>#</th><th>Personnage</th><th class="hide-s">Classe</th><th class="hide-s">Faction</th><th>T0</th><th>T0.5</th><th class="hide-s">Quêtes</th><th class="hide-s" title="Préparations de raids (attunements)">Raids</th><th class="hide-s">BiS</th><th>Avancement</th><th class="hide-s">Mis à jour</th></tr></thead><tbody class="rk-body"></tbody></table></div>`;
   box.querySelector(".f-cls").onchange = draw; box.querySelector(".f-fac").onchange = draw;
   box.querySelector(".rk-refresh").onclick = () => loadRanking(box);
   box.querySelector(".rk-body").addEventListener("click", e => { const a = e.target.closest(".mlink"); if (a) showMember(a.dataset.name); });
