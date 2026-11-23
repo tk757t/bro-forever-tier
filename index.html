@@ -7,7 +7,7 @@
 <meta name="description" content="Suivi de progression des sets T0 et T0.5 pour la guilde BroForever (WoW Forever) et classement.">
 <script>const whTooltips={colorLinks:true,iconizeLinks:false,renameLinks:false,iconSize:"small"};</script>
 <script src="https://wow.zamimg.com/js/tooltips.js"></script>
-<link rel="stylesheet" href="style.css?v=15">
+<link rel="stylesheet" href="style.css?v=17">
 </head>
 <body>
 <div class="wrap">
@@ -58,18 +58,18 @@
 
     <div class="layout">
     <nav class="tabs" id="tabs">
-      <button data-v="t0" class="on" id="tabT0"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 5-3.2 8.4-7 10-3.8-1.6-7-5-7-10V6l7-3z"/></svg><span class="tl">T0</span></button>
+      <button data-v="profile" class="on"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg><span class="tl">Profil</span></button>
+      <button data-v="t0" id="tabT0"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 5-3.2 8.4-7 10-3.8-1.6-7-5-7-10V6l7-3z"/></svg><span class="tl">T0</span></button>
       <button data-v="t05" id="tabT05"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 5-3.2 8.4-7 10-3.8-1.6-7-5-7-10V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg><span class="tl">T0.5</span></button>
       <button data-v="quest"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4"/><path d="M5 4h11l-2 4 2 4H5"/></svg><span class="tl">Chaîne de quêtes T0.5</span></button>
       <button data-v="raids"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20l5-9 4 5 3-6 6 10H3z"/><path d="M15 4l1 2 2 1-2 1-1 2-1-2-2-1 2-1z"/></svg><span class="tl">Préparations raids</span></button>
       <button data-v="mats"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 8l-9-5-9 5v8l9 5 9-5V8z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg><span class="tl">Matériaux &amp; or</span></button>
       <button data-v="bis"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 17.5L3 6V3h3l11.5 11.5"/><path d="M13 19l6-6"/><path d="M16 16l4 4"/><path d="M19 21l2-2"/></svg><span class="tl">BiS</span></button>
       <button data-v="rank"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 21h8M12 17v4"/><path d="M7 4h10v5a5 5 0 01-10 0V4z"/><path d="M17 5h3v2a3 3 0 01-3 3M7 5H4v2a3 3 0 003 3"/></svg><span class="tl">Classement</span></button>
-      <button data-v="profile"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg><span class="tl">Profil</span></button>
     </nav>
     <div class="content">
 
-    <section class="view on" id="v-t0"><div class="grid">
+    <section class="view" id="v-t0"><div class="grid">
       <div class="panel"><h2><span id="t0title"></span> <small id="t0sum"></small></h2><div id="t0list"></div></div>
       <div class="stack">
         <div class="panel"><h2>Bonus de set</h2><div id="t0bon"></div></div>
@@ -118,8 +118,9 @@
         <div class="chk info" style="margin-top:12px">Clique une ligne pour la cocher quand tu possèdes le BiS de l'emplacement. Noms, icônes et niveaux d'objet : Wowhead Forever (fr). Choix des BiS : listes « Pre Raid » Forever (wowtbc.gg), à confirmer en jeu.</div></div>
     </section>
 
-    <section class="view" id="v-profile">
-      <div class="panel"><h2>Mes personnages <small>spécialisation, changement de personnage</small></h2>
+    <section class="view on" id="v-profile">
+      <div class="panel"><h2>Mon personnage <small>équipement BiS par spécialisation</small></h2><div id="paperBox"></div></div>
+      <div class="panel" style="margin-top:16px"><h2>Mes personnages <small>spécialisation, changement de personnage</small></h2>
         <div class="chk info">Ajoute plusieurs personnages et indique leur spécialisation : les listes BiS en dépendent. Chaque personnage garde sa propre progression.</div>
         <div id="profileBox"></div></div>
     </section>
@@ -140,13 +141,13 @@
 <div class="modal" id="newsModal" hidden><div class="panel modal-box news-box" id="newsBox" role="dialog" aria-modal="true" aria-label="Nouveautés"></div></div>
 <div class="modal" id="memberModal" hidden><div class="panel modal-box" id="memberBox"></div></div>
 
-<script src="news.js?v=15"></script>
-<script src="config.js?v=15"></script>
-<script src="data.js?v=15"></script>
-<script src="bis.js?v=15"></script>
-<script src="chain.js?v=15"></script>
-<script src="quests.js?v=15"></script>
-<script src="raids.js?v=15"></script>
-<script src="app.js?v=16"></script>
+<script src="news.js?v=17"></script>
+<script src="config.js?v=17"></script>
+<script src="data.js?v=17"></script>
+<script src="bis.js?v=17"></script>
+<script src="chain.js?v=17"></script>
+<script src="quests.js?v=17"></script>
+<script src="raids.js?v=17"></script>
+<script src="app.js?v=17"></script>
 </body>
 </html>

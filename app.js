@@ -370,7 +370,7 @@ function render() {
   $("gold").innerHTML = `<div class="chk info">Pour finir la chaîne, prévois <b>${sure} po</b> (sûr)${maybe ? ` + <b>${maybe} po</b> peut-être (baguette de Vi'el)` : ""}.</div>` +
     goldRows.map(r => `<div class="mat ${r[3] ? "full" : ""}"><div class="mn">${r[0].replace(" (non confirmé)", "")}<small>${r[2].n}</small></div><div class="have"><b class="gp">${r[3] ? "✓" : r[1] + " po"}</b></div></div>`).join("");
 
-  renderRaids();
+  renderRaids(); renderPaper();
   scheduleSave();
   try { window.$WowheadPower && $WowheadPower.refreshLinks(); } catch (_) {}
 }
@@ -543,7 +543,7 @@ function setSpec(spec) {
   profile.spec = spec || null;
   ls.set("tier-profile", JSON.stringify(profile));
   upsertChar(profile);
-  renderHeader(); updateBisStat(); renderBis();
+  renderHeader(); updateBisStat(); renderBis(); renderPaper();
   dirty = true; scheduleSave();
 }
 function renderBis() {
@@ -576,7 +576,76 @@ function bisReadonly(cls, spec, state) {
 /* ============ PROFIL (personnages et spécialisations) ============ */
 const countTrue = o => Object.values(o || {}).filter(Boolean).length;
 function localState(name) { try { return Object.assign(emptyState(), JSON.parse(ls.get("tier-state:" + nameKey(name)) || "{}")); } catch (_) { return emptyState(); } }
+/* ---- poupée d'équipement (page Profil) ---- */
+const DOLL_L = ["head", "neck", "shoulder", "back", "chest", "shirt", "tabard", "wrist"];
+const DOLL_R = ["hands", "waist", "legs", "feet", "finger1", "finger2", "trinket1", "trinket2"];
+const DOLL_B = ["weapon", "offhand", "ranged"];
+const DOLL_FR = Object.assign({ shirt: "Chemise", tabard: "Tabard" }, BIS_SLOT_FR);
+const WEAPON_ART = { warrior: "sword", paladin: "sword", rogue: "sword", hunter: "bow", druid: "staff", mage: "staff", priest: "staff", warlock: "staff", shaman: "staff" };
+const dollIcon = ic => ic ? `<img src="https://wow.zamimg.com/images/wow/icons/large/${ic}.jpg" width="52" height="52" alt="" loading="lazy" onerror="this.style.visibility='hidden'">` : "";
+function dollSlot(slot, side, slots, spec) {
+  const d = slots && slots[slot];
+  if (!d) return `<div class="dslot ${side} empty"><div class="dico"><span class="dglyph">${(DOLL_FR[slot] || "").slice(0, 1)}</span></div><div class="dtx"><span class="dsl">${DOLL_FR[slot]}</span><span class="dn dim">${slot === "shirt" || slot === "tabard" ? "Cosmétique" : "Pas de BiS"}</span></div></div>`;
+  const k = bisKey(spec, slot), ok = !!st.bis[k], it = itemInfo(d.p);
+  return `<div class="dslot ${side} ${ok ? "got" : ""}" data-dbis="${esc(k)}" style="--q:${QCOL[it[1]] || "#fff"}" title="${ok ? "Possédé — clique pour décocher" : "Clique quand tu possèdes cet objet"}">
+    <div class="dico">${dollIcon(it[2])}<span class="dchk">✓</span></div>
+    <div class="dtx"><span class="dsl">${DOLL_FR[slot]}${it[3] ? ` · <b>${it[3]}</b>` : ""}</span><span class="dn" style="color:${QCOL[it[1]] || "#fff"}">${aForever(d.p, esc(it[0]))}</span>${d.a.length ? `<span class="dalt">${d.a.length} alternative${d.a.length > 1 ? "s" : ""}</span>` : ""}</div></div>`;
+}
+function dollArt(cls, lit) {
+  const L = k => lit[k] ? " lit" : "", w = WEAPON_ART[cls] || "staff";
+  const weapon = w === "bow" ? `<path class="part weapon${L("weapon")}" d="M236 150 Q276 250 236 350" fill="none" stroke-width="5"/><line x1="236" y1="150" x2="236" y2="350" stroke="rgba(255,255,255,.35)" stroke-width="1.5"/>`
+    : w === "sword" ? `<path class="part weapon${L("weapon")}" d="M240 236 L246 120 L252 236 Z"/><rect class="part weapon${L("weapon")}" x="232" y="234" width="28" height="7" rx="3"/><rect class="part weapon${L("weapon")}" x="243" y="241" width="6" height="26" rx="3"/>`
+    : `<rect class="part weapon${L("weapon")}" x="243" y="120" width="6" height="250" rx="3"/><circle class="part weapon${L("weapon")}" cx="246" cy="112" r="14"/>`;
+  const off = cls === "paladin" || cls === "warrior" || cls === "shaman" ? `<path class="part offhand${L("offhand")}" d="M40 205 L82 205 L82 250 Q61 276 40 250 Z"/>` : "";
+  return `<svg class="dart" viewBox="0 0 300 430" role="img" aria-label="Silhouette du personnage">
+    <defs><radialGradient id="dg" cx="50%" cy="46%" r="60%"><stop offset="0" stop-color="var(--accent)" stop-opacity=".38"/><stop offset=".6" stop-color="var(--accent)" stop-opacity=".07"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/></radialGradient></defs>
+    <circle cx="150" cy="215" r="200" fill="url(#dg)"/>
+    <circle class="rune" cx="150" cy="215" r="150" fill="none" stroke-dasharray="3 9"/><circle class="rune" cx="150" cy="215" r="122" fill="none" stroke-dasharray="1 5"/>
+    <ellipse cx="150" cy="408" rx="86" ry="11" fill="rgba(0,0,0,.45)"/>
+    <path class="part cape${L("back")}" d="M108 140 Q150 122 192 140 L214 372 Q150 392 86 372 Z"/>
+    ${weapon}${off}
+    <rect class="part legs${L("legs")}" x="102" y="252" width="43" height="132" rx="10"/><rect class="part legs${L("legs")}" x="155" y="252" width="43" height="132" rx="10"/>
+    <path class="part feet${L("feet")}" d="M98 378 h50 v18 h-58 q0 -14 8 -18z"/><path class="part feet${L("feet")}" d="M152 378 h50 q8 4 8 18 h-58z"/>
+    <path class="part arm" d="M84 150 Q62 210 72 266 L92 268 Q101 214 108 160 Z"/><path class="part arm" d="M216 150 Q238 210 228 266 L208 268 Q199 214 192 160 Z"/>
+    <rect class="part wrist${L("wrist")}" x="68" y="222" width="26" height="12" rx="5" transform="rotate(8 81 228)"/><rect class="part wrist${L("wrist")}" x="206" y="222" width="26" height="12" rx="5" transform="rotate(-8 219 228)"/>
+    <circle class="part hands${L("hands")}" cx="81" cy="276" r="13"/><circle class="part hands${L("hands")}" cx="219" cy="276" r="13"/>
+    <path class="part chest${L("chest")}" d="M106 140 Q150 126 194 140 L204 252 Q150 268 96 252 Z"/>
+    <rect class="part waist${L("waist")}" x="98" y="244" width="104" height="13" rx="5"/>
+    <ellipse class="part shoulder${L("shoulder")}" cx="98" cy="146" rx="28" ry="19" transform="rotate(-18 98 146)"/><ellipse class="part shoulder${L("shoulder")}" cx="202" cy="146" rx="28" ry="19" transform="rotate(18 202 146)"/>
+    <rect class="part neck${L("neck")}" x="139" y="116" width="22" height="20" rx="6"/>
+    <ellipse class="part head${L("head")}" cx="150" cy="90" rx="28" ry="32"/>
+  </svg>`;
+}
+function renderPaper() {
+  const box = $("paperBox");
+  if (!box || !profile || !ctx) return;
+  const cl = CLASSES[profile.cls], specs = specList(profile.cls), spec = profile.spec && specs[profile.spec] ? profile.spec : null, d = spec ? specs[spec] : null;
+  const slots = d ? d.slots : null, all = Object.keys(slots || {});
+  const have = spec ? all.filter(s => st.bis[bisKey(spec, s)]).length : 0, pct = all.length ? have / all.length * 100 : 0;
+  const lit = {}; all.forEach(s => { if (st.bis[bisKey(spec, s)]) lit[s] = true; });
+  const ilv = all.map(s => itemInfo(slots[s].p)[3]).filter(Boolean), avg = ilv.length ? Math.round(ilv.reduce((x, y) => x + y, 0) / ilv.length) : 0;
+  const c0 = ctx.T0.filter(p => st.t0[p.id]).length, c5 = ctx.T05.filter(p => st.t05[p.id]).length;
+  const cq = Object.values(st.q).filter(Boolean).length;
+  const pills = `<div class="spec-pills">${Object.entries(specs).map(([k, s]) => `<button type="button" class="choice ${spec === k ? "on" : ""}" data-spec="${esc(k)}" style="--c:${cl.color}"><span class="dot"></span>${esc(s.fr)} <small>${ROLE_FR[s.role]}</small></button>`).join("")}</div>`;
+  box.innerHTML = `<div class="doll-top">${pills}</div>
+    ${spec ? "" : '<div class="chk info" style="margin-top:12px"><b>Choisis ta spécialisation</b> pour afficher ton équipement BiS autour de ton personnage.</div>'}
+    <div class="doll">
+      <div class="dcol l">${DOLL_L.map(s => dollSlot(s, "l", slots, spec)).join("")}</div>
+      <div class="dcenter"><div class="dstage">${dollArt(profile.cls, lit)}<div class="dbadge">${portrait(profile.cls, 56)}</div></div>
+        <div class="dname" style="color:${cl.color}">${esc(profile.name)}</div>
+        <div class="dsub">${cl.fr}${d ? " · " + esc(d.fr) : ""} · <span class="${profile.faction === "horde" ? "fac-h" : "fac-a"}">${FACTIONS[profile.faction]}</span></div>
+        <div class="dbar"><div class="phase" style="margin:0 0 5px"><span>BiS équipé</span><span>${spec ? have + " / " + all.length : "—"}</span></div><div class="bar ${spec && have === all.length ? "ok" : ""}"><i style="width:${pct}%"></i></div></div>
+        <div class="dstats"><div><b>${avg || "—"}</b><span>iLvl BiS</span></div><div><b>${c0}/8</b><span>T0</span></div><div><b>${c5}/8</b><span>T0.5</span></div><div><b>${Math.round(cq / ctx.nQ * 100)}%</b><span>Quêtes</span></div><div><b>${raidPct(countTrue(st.r), profile.faction)}%</b><span>Raids</span></div></div>
+      </div>
+      <div class="dcol r">${DOLL_R.map(s => dollSlot(s, "r", slots, spec)).join("")}</div>
+    </div>
+    <div class="dbottom">${DOLL_B.map(s => dollSlot(s, "b", slots, spec)).join("")}</div>
+    <div class="chk info" style="margin-top:12px">Objets BiS de la spécialisation choisie (listes Pre Raid Forever). Clique sur un emplacement quand tu possèdes l'objet : la silhouette s'illumine. Survole le nom d'un objet pour voir ses statistiques.</div>`;
+  try { window.$WowheadPower && $WowheadPower.refreshLinks(); } catch (_) {}
+}
+
 function renderProfile() {
+  renderPaper();
   const chars = getChars(), box = $("profileBox"), me = profile ? nameKey(profile.name) : "";
   box.innerHTML = chars.map(c => {
     const s = c.name === (profile && profile.name) ? st : localState(c.name), active = nameKey(c.name) === me, cl = CLASSES[c.cls] || CLASSES.druid;
@@ -687,7 +756,7 @@ function enterApp() {
   render();
   updateBisStat();
   flush();
-  try { const t = ls.get("tier-tab"); const b = t && document.querySelector(`#tabs button[data-v="${t}"]`); if (b) b.click(); } catch (_) {}
+  const home = document.querySelector('#tabs [data-v="profile"]'); if (home) home.click(); // le Profil est la page d'accueil
 }
 
 /* ============ ÉVÉNEMENTS ============ */
@@ -733,8 +802,10 @@ document.addEventListener("click", e => {
     render(); return;
   }
   const pill = e.target.closest("[data-spec]");
-  if (pill && $("bisBox").contains(pill)) { setSpec(pill.dataset.spec); return; }
+  if (pill && ($("bisBox").contains(pill) || $("paperBox").contains(pill))) { setSpec(pill.dataset.spec); return; }
   if (e.target.closest("a,input,button,summary,details")) return;
+  const ds = e.target.closest("[data-dbis]");
+  if (ds && $("paperBox").contains(ds)) { const k = ds.dataset.dbis; st.bis[k] = !st.bis[k]; renderPaper(); renderBis(); updateBisStat(); scheduleSave(); return; }
   const row = e.target.closest("[data-bis]");
   if (row && $("bisBox").contains(row)) { const k = row.dataset.bis; st.bis[k] = !st.bis[k]; renderBis(); updateBisStat(); scheduleSave(); }
 });

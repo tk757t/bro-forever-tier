@@ -2,8 +2,16 @@
 // Règle de version :
 //  - petit changement ou correction : seulement +0.0.1 sur TIER_VERSION (aucune entrée, aucun pop-up) ;
 //  - vraie nouveauté : nouvelle version x.y.0 + une entrée en HAUT de TIER_NEWS (le pop-up s'ouvre alors une fois pour chaque membre).
-window.TIER_VERSION = "1.8.1";
+window.TIER_VERSION = "1.9.0";
 window.TIER_NEWS = [
+  {
+    v: "1.9.0", date: "23/11/2026", title: "Profil : ton équipement en vue",
+    items: [
+      { t: "🏠 Le Profil devient la page d'accueil", d: "Il est maintenant en haut du menu et s'ouvre en premier." },
+      { t: "🛡 Silhouette et emplacements d'équipement", d: "Tes objets BiS sont rangés autour de ton personnage, façon fiche de personnage. Clique sur un emplacement quand tu possèdes l'objet : la silhouette s'illumine et ta progression BiS se met à jour." },
+      { t: "📋 Résumé et liste des personnages", d: "Sous la silhouette : iLvl moyen du BiS, T0, T0.5, quêtes et raids. Ta liste de personnages se trouve juste en dessous." },
+    ],
+  },
   {
     v: "1.8.0", date: "23/11/2026", title: "Préparations de raids : Onyxia",
     items: [
